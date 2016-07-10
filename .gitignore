@@ -1,4 +1,5 @@
 *.iml
-*.jar
-*.class
 .gitignore
+commons/target/
+core/target/
+.idea/
