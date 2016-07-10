@@ -11,6 +11,7 @@
 
     <artifactId>core</artifactId>
 
+
     <dependencies>
         <!-- https://mvnrepository.com/artifact/junit/junit -->
         <dependency>
@@ -18,7 +19,6 @@
             <artifactId>junit</artifactId>
             <version>4.12</version>
         </dependency>
-
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
@@ -36,7 +36,6 @@
             <artifactId>guava</artifactId>
             <version>19.0</version>
         </dependency>
-
         <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -46,5 +45,6 @@
 
 
     </dependencies>
+
 
 </project>
