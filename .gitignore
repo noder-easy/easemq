@@ -1,4 +1,7 @@
 *.iml
 commons/target/
 core/target/
+client/target/
+server/target/
+core/core.iml
 .idea/
