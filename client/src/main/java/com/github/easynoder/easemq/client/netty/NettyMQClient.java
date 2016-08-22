@@ -38,7 +38,7 @@ public class NettyMQClient implements Runnable {
             });
 
             ChannelFuture f = b.connect("127.0.0.1", 2770).sync();
-            f.channel().writeAndFlush("hello Service!" + Thread.currentThread().getName() + ":--->:");
+            /*f.channel().writeAndFlush("hello Service!" + Thread.currentThread().getName() + ":--->:");*/
             f.channel().closeFuture().sync();
 
 

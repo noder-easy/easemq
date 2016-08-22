@@ -3,6 +3,8 @@ package com.github.easynoder.easemq.server.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.util.Date;
+
 /**
  * Desc:
  * Author:easynoder
@@ -11,22 +13,27 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  */
 public class TcpServerHandler extends ChannelInboundHandlerAdapter {
 
+
+
+    int count = 0;
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("channelActive>>>>>>>>");
+        System.out.println("server channelActive>>>>>>>>"+ new Date());
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         System.out.println("server received msg:" + msg);
-        ctx.channel().writeAndFlush("yes server has received msg:" + msg);
-        ctx.close();
-
+        Thread.sleep(2000);
+        ctx.channel().writeAndFlush("I am fine, and you ?" + count ++);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         System.out.println("exception caught...");
         cause.printStackTrace();
+        ctx.close();
     }
+
 }
