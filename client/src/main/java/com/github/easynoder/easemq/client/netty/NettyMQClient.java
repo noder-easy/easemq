@@ -1,6 +1,7 @@
 package com.github.easynoder.easemq.client.netty;
 
 import com.github.easynoder.easemq.client.handler.TcpClientHandler;
+import com.github.easynoder.easemq.commons.HostPort;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -15,8 +16,22 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NettyMQClient implements Runnable {
+
+    public static final Logger LOGGER = LoggerFactory.getLogger(NettyMQClient.class);
+
+    private HostPort hostPort;
+
+    public NettyMQClient() {
+        this(new HostPort());
+    }
+
+    public NettyMQClient(HostPort hostPort) {
+        this.hostPort = hostPort;
+    }
 
     public void run() {
         EventLoopGroup group = new NioEventLoopGroup();
@@ -37,10 +52,9 @@ public class NettyMQClient implements Runnable {
                 }
             });
 
-            ChannelFuture f = b.connect("127.0.0.1", 2770).sync();
-            /*f.channel().writeAndFlush("hello Service!" + Thread.currentThread().getName() + ":--->:");*/
+            ChannelFuture f = b.connect(this.hostPort.getHost(), this.hostPort.getPort()).sync();
+            LOGGER.info("Netty client connected! hostport: {}", this.hostPort);
             f.channel().closeFuture().sync();
-
 
         } catch (Exception e) {
             e.printStackTrace();

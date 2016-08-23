@@ -1,5 +1,6 @@
 package com.github.easynoder.easemq.server.netty;
 
+import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.server.handler.TcpServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -10,6 +11,10 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
+import org.apache.catalina.Host;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 /**
  * Desc:
@@ -19,6 +24,7 @@ import io.netty.util.CharsetUtil;
  */
 public class NettyMQServer {
 
+    public static final Logger LOGGER = LoggerFactory.getLogger(NettyMQServer.class);
 
     private static final int BOSS_GROUP_SIZE = Runtime.getRuntime().availableProcessors();
     private static final int WORKER_GROUP_SIZE = 100;
@@ -26,7 +32,18 @@ public class NettyMQServer {
     private static final EventLoopGroup bossGroup = new NioEventLoopGroup(BOSS_GROUP_SIZE);
     private static final EventLoopGroup workerGroup = new NioEventLoopGroup(WORKER_GROUP_SIZE);
 
-    public static void start() throws InterruptedException {
+    private HostPort hostPort;
+
+    public NettyMQServer() {
+        this(new HostPort());
+    }
+
+    public NettyMQServer(HostPort hostPort) {
+        Assert.notNull(hostPort, "server bind hostport can't be null!");
+        this.hostPort = hostPort;
+    }
+
+    public void start() throws InterruptedException {
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
@@ -43,21 +60,21 @@ public class NettyMQServer {
 
                     }
                 });
-        ChannelFuture cf = bootstrap.bind("localhost", 2770).sync();
+        ChannelFuture cf = bootstrap.bind(this.hostPort.getHost(), this.hostPort.getPort()).sync();
+        LOGGER.info("netty mq-server started! bind hostport {}", this.hostPort);
         cf.channel().closeFuture().sync();
-        System.out.println("server started!");
     }
 
 
-    protected static void shutdown() {
+    protected void shutdown() {
         workerGroup.shutdownGracefully();
         bossGroup.shutdownGracefully();
     }
 
 
     public static void main(String[] args) throws InterruptedException {
-        System.out.println("start tcp server....");
-        NettyMQServer.start();
+        System.out.println("start netty mq-server....");
+        new NettyMQServer().start();
     }
 
 }
