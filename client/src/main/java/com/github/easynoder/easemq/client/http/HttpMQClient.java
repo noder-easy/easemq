@@ -1,6 +1,7 @@
 package com.github.easynoder.easemq.client.http;
 
 import com.github.easynoder.easemq.client.IMQClient;
+import com.github.easynoder.easemq.core.Message;
 
 /**
  * Desc:
@@ -9,4 +10,15 @@ import com.github.easynoder.easemq.client.IMQClient;
  * E-mail:easynoder@outlook.com
  */
 public class HttpMQClient implements IMQClient{
+    public void start() {
+
+    }
+
+    public void send(String topic, Message message) {
+
+    }
+
+    public void close() {
+
+    }
 }

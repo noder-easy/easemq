@@ -1,13 +1,11 @@
 package com.github.easynoder.easemq.client.netty;
 
+import com.github.easynoder.easemq.client.IMQClient;
 import com.github.easynoder.easemq.client.handler.TcpClientHandler;
 import com.github.easynoder.easemq.commons.HostPort;
+import com.github.easynoder.easemq.core.Message;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -19,9 +17,13 @@ import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NettyMQClient implements Runnable {
+public class NettyMQClient implements IMQClient {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(NettyMQClient.class);
+
+    private ChannelFuture channelFuture;
+
+    private EventLoopGroup group = new NioEventLoopGroup();
 
     private HostPort hostPort;
 
@@ -31,10 +33,10 @@ public class NettyMQClient implements Runnable {
 
     public NettyMQClient(HostPort hostPort) {
         this.hostPort = hostPort;
+        this.start();
     }
 
-    public void run() {
-        EventLoopGroup group = new NioEventLoopGroup();
+    public void start() {
         try {
             Bootstrap b = new Bootstrap();
             b.group(group);
@@ -52,21 +54,28 @@ public class NettyMQClient implements Runnable {
                 }
             });
 
-            ChannelFuture f = b.connect(this.hostPort.getHost(), this.hostPort.getPort()).sync();
+            channelFuture = b.connect(this.hostPort.getHost(), this.hostPort.getPort()).sync();
             LOGGER.info("Netty client connected! hostport: {}", this.hostPort);
-            f.channel().closeFuture().sync();
 
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            group.shutdownGracefully();
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        for (int i = 0; i < 1; i++) {
-            new Thread(new NettyMQClient(), ">>>this thread " + i).start();
-        }
-        while (true) ;
+    public void send(String topic, Message message) {
+        Channel channel = channelFuture.channel();
+        channel.writeAndFlush(message.toString());
     }
+
+    public void close() {
+        try {
+            channelFuture.channel().closeFuture().sync();
+            group.shutdownGracefully();
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

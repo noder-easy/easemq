@@ -1,5 +1,6 @@
 package com.github.easynoder.easemq.server.handler;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -25,9 +26,8 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         System.out.println("server received msg:" + msg);
-        Thread.sleep(2000);
-        ctx.channel().writeAndFlush("I am fine, and you ?" + count ++);
     }
+
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
