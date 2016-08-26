@@ -18,8 +18,13 @@ public class DefaultProducerTest {
     @Test
     public void testSend() {
         IProducer producer = new DefaultProducer(new NettyMQClient());
-        Message message = new Message().setBody("body").setHead("head");
-        producer.send("testTopic", message);
+        long topicNum = System.currentTimeMillis()/1000;
+        for (int i = 0;i < 10;i ++) {
+            Message.Header header = new Message.Header().setVersion(1).setExtra(0);
+            Message message = new Message().setTopic("easemq-"+ topicNum ).setBody("body"+i).setHeader(header);
+            producer.send(message.getTopic(), message);
+        }
+
         System.out.println("send succ!");
         try {
             Thread.sleep(10* 1000);

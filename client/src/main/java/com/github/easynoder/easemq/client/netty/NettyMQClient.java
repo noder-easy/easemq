@@ -4,6 +4,7 @@ import com.github.easynoder.easemq.client.IMQClient;
 import com.github.easynoder.easemq.client.handler.TcpClientHandler;
 import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.core.Message;
+import com.google.gson.Gson;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -24,6 +25,8 @@ public class NettyMQClient implements IMQClient {
     private ChannelFuture channelFuture;
 
     private EventLoopGroup group = new NioEventLoopGroup();
+
+    private Gson gson = new Gson();
 
     private HostPort hostPort;
 
@@ -65,7 +68,7 @@ public class NettyMQClient implements IMQClient {
 
     public void send(String topic, Message message) {
         Channel channel = channelFuture.channel();
-        channel.writeAndFlush(message.toString());
+        channel.writeAndFlush(gson.toJson(message));
     }
 
     public void close() {

@@ -23,7 +23,7 @@ public class TcpClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-       // System.out.println("client接收到服务器返回的消息:" + msg);
+        System.out.println("client接收到服务器返回的消息:" + msg);
        // ctx.channel().writeAndFlush("hi server, how are you? "+ count++);
     }
 

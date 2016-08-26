@@ -1,6 +1,10 @@
 package com.github.easynoder.easemq.server.netty;
 
 import com.github.easynoder.easemq.commons.HostPort;
+import com.github.easynoder.easemq.core.Message;
+import com.github.easynoder.easemq.core.exception.StoreException;
+import com.github.easynoder.easemq.server.IMQServer;
+import com.github.easynoder.easemq.server.NettyMQServerClientManager;
 import com.github.easynoder.easemq.server.handler.TcpServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -22,7 +26,7 @@ import org.springframework.util.Assert;
  * Date:16/7/17
  * E-mail:easynoder@outlook.com
  */
-public class NettyMQServer {
+public class NettyMQServer implements IMQServer{
 
     public static final Logger LOGGER = LoggerFactory.getLogger(NettyMQServer.class);
 
@@ -32,7 +36,10 @@ public class NettyMQServer {
     private static final EventLoopGroup bossGroup = new NioEventLoopGroup(BOSS_GROUP_SIZE);
     private static final EventLoopGroup workerGroup = new NioEventLoopGroup(WORKER_GROUP_SIZE);
 
+    private ChannelFuture channelFuture;
     private HostPort hostPort;
+
+    NettyMQServerClientManager clienManager = new NettyMQServerClientManager();
 
     public NettyMQServer() {
         this(new HostPort());
@@ -41,6 +48,7 @@ public class NettyMQServer {
     public NettyMQServer(HostPort hostPort) {
         Assert.notNull(hostPort, "server bind hostport can't be null!");
         this.hostPort = hostPort;
+        new Thread(clienManager).start();
     }
 
     public void start() throws InterruptedException {
@@ -56,13 +64,25 @@ public class NettyMQServer {
                         pipeline.addLast(new LengthFieldPrepender(4));
                         pipeline.addLast(new StringDecoder(CharsetUtil.UTF_8));
                         pipeline.addLast(new StringEncoder(CharsetUtil.UTF_8));
-                        pipeline.addLast(new TcpServerHandler());
+                        pipeline.addLast(new TcpServerHandler(clienManager));
 
                     }
                 });
-        ChannelFuture cf = bootstrap.bind(this.hostPort.getHost(), this.hostPort.getPort()).sync();
+        channelFuture = bootstrap.bind(this.hostPort.getHost(), this.hostPort.getPort()).sync();
         LOGGER.info("netty mq-server started! bind hostport {}", this.hostPort);
-        cf.channel().closeFuture().sync();
+    }
+
+    public void send(String topic, Message message) {
+
+        // TODO: 16/8/25
+    }
+
+    public void close() {
+        try {
+            channelFuture.channel().closeFuture().sync();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -75,6 +95,8 @@ public class NettyMQServer {
     public static void main(String[] args) throws InterruptedException {
         System.out.println("start netty mq-server....");
         new NettyMQServer().start();
+
+
     }
 
 }

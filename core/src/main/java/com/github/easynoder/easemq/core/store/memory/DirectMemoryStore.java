@@ -29,6 +29,7 @@ public class DirectMemoryStore<T> extends MemoryStore<T> implements IStore<T> {
     public boolean store(T data) throws StoreException {
         try {
             this.queue.put(data);
+            System.out.println("队列存入消息: "+queue);
             return true;
         } catch (InterruptedException e) {
             throw new StoreException("store data failure! data: " + data);
