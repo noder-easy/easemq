@@ -1,6 +1,7 @@
 package com.github.easynoder.easemq.server.netty;
 
 import com.github.easynoder.easemq.commons.HostPort;
+import com.github.easynoder.easemq.commons.factory.JedisFactory;
 import com.github.easynoder.easemq.core.Message;
 import com.github.easynoder.easemq.core.exception.StoreException;
 import com.github.easynoder.easemq.server.IMQServer;
@@ -39,7 +40,7 @@ public class NettyMQServer implements IMQServer{
     private ChannelFuture channelFuture;
     private HostPort hostPort;
 
-    NettyMQServerClientManager clienManager = new NettyMQServerClientManager();
+    private NettyMQServerClientManager clienManager = new NettyMQServerClientManager();
 
     public NettyMQServer() {
         this(new HostPort());
@@ -72,19 +73,13 @@ public class NettyMQServer implements IMQServer{
         LOGGER.info("netty mq-server started! bind hostport {}", this.hostPort);
     }
 
-    public void send(String topic, Message message) {
-
-        // TODO: 16/8/25
-    }
-
     public void close() {
         try {
             channelFuture.channel().closeFuture().sync();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.error("close client error", e);
         }
     }
-
 
     protected void shutdown() {
         workerGroup.shutdownGracefully();
@@ -93,10 +88,9 @@ public class NettyMQServer implements IMQServer{
 
 
     public static void main(String[] args) throws InterruptedException {
-        System.out.println("start netty mq-server....");
+        LOGGER.info("start netty mq-server >>>>>>>>>>>>>>>>>>>>");
         new NettyMQServer().start();
-
-
+        JedisFactory.getJedis().del("easemq");
     }
 
 }

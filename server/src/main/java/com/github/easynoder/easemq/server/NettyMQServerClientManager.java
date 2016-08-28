@@ -1,6 +1,7 @@
 package com.github.easynoder.easemq.server;
 
-import com.github.easynoder.easemq.commons.ContextHelper;
+import com.github.easynoder.easemq.commons.util.GsonUtils;
+import com.github.easynoder.easemq.core.Message;
 import com.github.easynoder.easemq.core.exception.StoreException;
 import com.github.easynoder.easemq.core.store.IStore;
 import com.github.easynoder.easemq.core.store.memory.DirectMemoryStore;
@@ -23,20 +24,25 @@ import java.util.concurrent.ConcurrentMap;
  * Date:16/8/25
  * E-mail:easynoder@outlook.com
  */
-public class NettyMQServerClientManager<T> implements Runnable {
+public class NettyMQServerClientManager implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyMQServerClientManager.class);
 
-//    private ConcurrentMap<String/*topic*/, ChannelHandlerContext> ctxMap = new ConcurrentHashMap<String, ChannelHandlerContext>();
+    /**
+     * topic 对应的队列
+     */
+    private ConcurrentMap<String/*topic*/, IStore<Message>> queueMap = new ConcurrentHashMap<String, IStore<Message>>();
 
-    private ConcurrentMap<String/*topic*/, IStore<T>> queueMap = new ConcurrentHashMap<String, IStore<T>>();
+    /**
+     * server端存储的所有的连接
+     */
+    private ConcurrentMap<String/*hostport*/, ChannelHandlerContext> ctxMap = new ConcurrentHashMap<String, ChannelHandlerContext>();
 
     public static Jedis jedis = new Jedis("localhost", 6379);
 
-
     private final Object QUEUE_LOCK = new Object();
 
-    public synchronized void addData(String topic, T message) {
+    public synchronized void addMessage(String topic, Message message) {
         try {
 
             /*if (queueMap.get(topic) == null) {
@@ -48,7 +54,7 @@ public class NettyMQServerClientManager<T> implements Runnable {
                 }
             }*/
             if (queueMap.get(topic) == null) {
-                IStore<T> iStore = new DirectMemoryStore<T>(1000);
+                IStore<Message> iStore = new DirectMemoryStore<Message>(1000);
                 queueMap.put(topic, iStore);
             }
             queueMap.get(topic).store(message);
@@ -57,29 +63,35 @@ public class NettyMQServerClientManager<T> implements Runnable {
         }
     }
 
-/*    public synchronized void addCtx(String topic, ChannelHandlerContext ctx) {
-        //ctxMap.replace(topic, ctx);
-        if (ctxMap.get(topic) == null) {
-            ctxMap.put(topic, ctx);
+    /**
+     * 客户端连接上来时,立即存储该连接
+     * todo thread-safe
+     * @param addr
+     * @param ctx
+     */
+    public void addCtx(String addr, ChannelHandlerContext ctx) {
+        ctxMap.put(addr, ctx);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("addr list: " + ctxMap.keySet());
         }
-    }*/
+    }
 
     public void run() {
-        LOGGER.info("NettyMQServerClientManager starting...");
+        LOGGER.info("NettyMQServerClientManager starting >>>>>>>>>>>>>>>>>>>>>>");
 
         try {
             Thread.sleep(10*1000l);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        for (final Map.Entry<String, IStore<T>> entry : queueMap.entrySet()) {
+        for (final Map.Entry<String, IStore<Message>> entry : queueMap.entrySet()) {
 
             new Thread(new Runnable() {
                 public void run() {
                     String topic = entry.getKey();
-                    IStore<T> queue = entry.getValue();
+                    IStore<Message> queue = entry.getValue();
                     while (true) {
-                        T data = null;
+                        Message data = null;
                         try {
                             data = queue.get();
                         } catch (StoreException e) {
@@ -90,25 +102,23 @@ public class NettyMQServerClientManager<T> implements Runnable {
                             LOGGER.debug("topic [{}] -> queue get message [{}]", topic, data);
                         }
 
-//                        String addr = jedis.get(topic);
                         List<String> addrs = jedis.lrange(topic, 0, -1);
                         if (CollectionUtils.isEmpty(addrs)) {
-                            LOGGER.warn("no consumer addr for topic = {}", topic);
+                            LOGGER.warn("no listener addr for topic = {}", topic);
                             continue;
                         }
-//                        String addr = ContextHelper.topicHostportMap.get(topic);
                         String addr = addrs.get(RandomUtils.nextInt(addrs.size()));
                         if (StringUtils.isEmpty(addr)) {
-                            LOGGER.warn("topic [{}] consumer is empty!", topic);
+                            LOGGER.warn("topic [{}] listener is empty!", topic);
                             continue;
                         }
-                        ChannelHandlerContext ctx = ContextHelper.ctxMap.get(addr);
+                        ChannelHandlerContext ctx = NettyMQServerClientManager.this.ctxMap.get(addr);
                         if (ctx == null) {
                             LOGGER.warn("addr [{}] ctx is null!", addr);
                             continue;
                         }
                         if (ctx.channel().isActive()) {
-                            ctx.channel().writeAndFlush(data);
+                            ctx.channel().writeAndFlush(GsonUtils.getGson().toJson(data));
                             if (LOGGER.isDebugEnabled()) {
                                 LOGGER.debug("addr -> [{}], topic -> [{}] , channel send message [{}] ok!", addr, topic, data);
                             }

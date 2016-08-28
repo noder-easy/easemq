@@ -1,10 +1,7 @@
 package com.github.easynoder.easemq.server.handler;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.github.easynoder.easemq.commons.ContextHelper;
+import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.Message;
-import com.github.easynoder.easemq.core.store.IStore;
-import com.github.easynoder.easemq.core.store.memory.DirectMemoryStore;
 import com.github.easynoder.easemq.server.NettyMQServerClientManager;
 import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,10 +19,7 @@ import java.util.Date;
  */
 public class TcpServerHandler extends ChannelInboundHandlerAdapter {
 
-
     private static final Logger LOGGER = LoggerFactory.getLogger(TcpServerHandler.class);
-
-    private Gson gson = new Gson();
 
     private NettyMQServerClientManager clientManager ;
 
@@ -36,25 +30,23 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         LOGGER.info("server channelActive>>>>>>>>"+ new Date());
-        ContextHelper.addCtx(ctx.channel().remoteAddress().toString(), ctx);
+        clientManager.addCtx(ctx.channel().remoteAddress().toString(), ctx);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-        Message message = gson.fromJson((String)msg, Message.class);
+        Message message = GsonUtils.getGson().fromJson((String)msg, Message.class);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("server received msg {} ", message);
         }
-//        clientManager.addCtx(message.getTopic(), ctx);
-        clientManager.addData(message.getTopic(), gson.toJson(message));
+        clientManager.addMessage(message.getTopic(), message);
     }
 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        System.out.println("exception caught...");
-        cause.printStackTrace();
+        LOGGER.error("exception caught", cause);
         ctx.close();
     }
 

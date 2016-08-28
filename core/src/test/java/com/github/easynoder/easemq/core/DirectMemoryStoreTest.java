@@ -65,7 +65,7 @@ public class DirectMemoryStoreTest {
                     }
                 }
             }
-        }, "consumer").start();
+        }, "listener").start();
 
         try {
             latch.await();

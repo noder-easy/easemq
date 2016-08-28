@@ -1,7 +1,6 @@
-package com.github.easynoder.easemq.client.consumer;
+package com.github.easynoder.easemq.client.listener;
 
 import com.github.easynoder.easemq.client.IMQClient;
-import com.github.easynoder.easemq.client.MessageListener;
 import com.github.easynoder.easemq.core.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,6 @@ public class DefaultMessageListener implements MessageListener{
     public DefaultMessageListener (String topic, IMQClient client) {
         this.topic = topic;
         this.client = client;
-//        client.registeListener(this);
     }
 
     public String getTopic() {
@@ -50,7 +48,7 @@ public class DefaultMessageListener implements MessageListener{
 
     public void onMessage(Message message) {
         // only print
-        LOGGER.info("topic = {}, receive message = {}", topic, message);
+        LOGGER.info("process message, topic = {}, receive message = {}", topic, message);
     }
 
 }

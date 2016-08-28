@@ -1,4 +1,4 @@
-package com.github.easynoder.easemq.client.consumer;
+package com.github.easynoder.easemq.client.listener;
 
 /**
  * Desc:
