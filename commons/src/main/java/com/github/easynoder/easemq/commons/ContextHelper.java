@@ -1,12 +1,10 @@
 package com.github.easynoder.easemq.commons;
 
 import io.netty.channel.ChannelHandlerContext;
+import redis.clients.jedis.Jedis;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Desc:
@@ -17,7 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ContextHelper {
 
 
-    public static List<String> consumerList = new CopyOnWriteArrayList<String>();
+    public static Jedis jedis = new Jedis("localhost", 6379);
 
     /**
      * topic对应的消费者
@@ -29,13 +27,12 @@ public class ContextHelper {
      */
     public static ConcurrentMap<String/*hostport*/, ChannelHandlerContext> ctxMap = new ConcurrentHashMap<String, ChannelHandlerContext>();
 
-    public static void addConsumerAddr(String addr) {
-        consumerList.add(addr);
-    }
-
     public static void addTopicConsumer(String topic, String topicHostport) {
         topicHostportMap.put(topic, topicHostport);
-        System.out.println("topicHostportMap = "+topicHostportMap);
+        jedis = new Jedis("localhost", 6379);
+        jedis.rpush(topic, topicHostport);
+
+        System.out.println("topicHostportMap = " + topicHostportMap);
     }
 
     public static void addCtx(String addr, ChannelHandlerContext ctx) {

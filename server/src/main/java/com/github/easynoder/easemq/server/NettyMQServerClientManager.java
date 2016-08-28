@@ -5,10 +5,14 @@ import com.github.easynoder.easemq.core.exception.StoreException;
 import com.github.easynoder.easemq.core.store.IStore;
 import com.github.easynoder.easemq.core.store.memory.DirectMemoryStore;
 import io.netty.channel.ChannelHandlerContext;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -26,6 +30,9 @@ public class NettyMQServerClientManager<T> implements Runnable {
 //    private ConcurrentMap<String/*topic*/, ChannelHandlerContext> ctxMap = new ConcurrentHashMap<String, ChannelHandlerContext>();
 
     private ConcurrentMap<String/*topic*/, IStore<T>> queueMap = new ConcurrentHashMap<String, IStore<T>>();
+
+    public static Jedis jedis = new Jedis("localhost", 6379);
+
 
     private final Object QUEUE_LOCK = new Object();
 
@@ -83,20 +90,27 @@ public class NettyMQServerClientManager<T> implements Runnable {
                             LOGGER.debug("topic [{}] -> queue get message [{}]", topic, data);
                         }
 
-                        String addr = ContextHelper.topicHostportMap.get(topic);
+//                        String addr = jedis.get(topic);
+                        List<String> addrs = jedis.lrange(topic, 0, -1);
+                        if (CollectionUtils.isEmpty(addrs)) {
+                            LOGGER.warn("no consumer addr for topic = {}", topic);
+                            continue;
+                        }
+//                        String addr = ContextHelper.topicHostportMap.get(topic);
+                        String addr = addrs.get(RandomUtils.nextInt(addrs.size()));
                         if (StringUtils.isEmpty(addr)) {
                             LOGGER.warn("topic [{}] consumer is empty!", topic);
                             continue;
                         }
                         ChannelHandlerContext ctx = ContextHelper.ctxMap.get(addr);
                         if (ctx == null) {
-                            LOGGER.warn("addr [] ctx is null!", addr);
+                            LOGGER.warn("addr [{}] ctx is null!", addr);
                             continue;
                         }
                         if (ctx.channel().isActive()) {
                             ctx.channel().writeAndFlush(data);
                             if (LOGGER.isDebugEnabled()) {
-                                LOGGER.debug("topic [{}] -> channel send message [{}] ok!", topic, data);
+                                LOGGER.debug("addr -> [{}], topic -> [{}] , channel send message [{}] ok!", addr, topic, data);
                             }
                         } else {
                             LOGGER.warn("topic [{}] -> channel is inactive!", topic);

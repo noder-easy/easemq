@@ -47,7 +47,7 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
             LOGGER.debug("server received msg {} ", message);
         }
 //        clientManager.addCtx(message.getTopic(), ctx);
-        clientManager.addData(message.getTopic(), message.getBody());
+        clientManager.addData(message.getTopic(), gson.toJson(message));
     }
 
 

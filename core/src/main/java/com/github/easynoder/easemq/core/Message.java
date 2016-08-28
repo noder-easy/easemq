@@ -94,5 +94,15 @@ public class Message implements Serializable{
         public int hashCode() {
             return Objects.hash(version, extra);
         }
+
+
+        @Override
+        public String toString() {
+            final StringBuffer sb = new StringBuffer("Header{");
+            sb.append("version=").append(version);
+            sb.append(", extra=").append(extra);
+            sb.append('}');
+            return sb.toString();
+        }
     }
 }

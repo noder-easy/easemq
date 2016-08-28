@@ -42,8 +42,13 @@ public class DefaultProducerTest {
     public static void startConsumer(){
         MessageListener listener = new DefaultMessageListener("easemq");
         IMQClient client = new NettyMQClient(listener);
+        System.out.println("start consumer1 succ!");
 
-        System.out.println("start consumer succ!");
+
+        MessageListener listener1 = new DefaultMessageListener("easemq");
+        IMQClient client1 = new NettyMQClient(listener1);
+        System.out.println("start consumer2 succ!");
+
     }
 
 

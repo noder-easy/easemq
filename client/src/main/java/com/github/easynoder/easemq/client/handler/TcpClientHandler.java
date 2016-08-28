@@ -3,6 +3,7 @@ package com.github.easynoder.easemq.client.handler;
 import com.github.easynoder.easemq.client.MessageListener;
 import com.github.easynoder.easemq.commons.ContextHelper;
 import com.github.easynoder.easemq.core.Message;
+import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -20,6 +21,8 @@ import org.slf4j.LoggerFactory;
 public class TcpClientHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TcpClientHandler.class);
+
+    private Gson gson = new Gson();
 
     int count = 0;
 
@@ -42,8 +45,8 @@ public class TcpClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        System.out.println("client接收到服务器返回的消息:" + msg);
-        Message message = (Message) msg;
+        LOGGER.info("client = {} receive message = {} ", ctx.channel().localAddress().toString(), msg);
+        Message message = gson.fromJson((String) msg, Message.class);
         if (listener != null) {
             listener.onMessage(message);
         }
@@ -51,6 +54,7 @@ public class TcpClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        System.out.println("client exception is general");
+        cause.printStackTrace();
+        LOGGER.error("exception: ", cause);
     }
 }
