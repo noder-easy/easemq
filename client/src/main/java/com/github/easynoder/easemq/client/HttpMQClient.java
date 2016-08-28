@@ -1,4 +1,4 @@
-package com.github.easynoder.easemq.client.http;
+package com.github.easynoder.easemq.client;
 
 import com.github.easynoder.easemq.client.IMQClient;
 import com.github.easynoder.easemq.client.listener.MessageListener;

@@ -1,6 +1,5 @@
-package com.github.easynoder.easemq.client.netty;
+package com.github.easynoder.easemq.client;
 
-import com.github.easynoder.easemq.client.IMQClient;
 import com.github.easynoder.easemq.client.listener.MessageListener;
 import com.github.easynoder.easemq.client.handler.TcpClientHandler;
 import com.github.easynoder.easemq.commons.HostPort;
@@ -55,9 +54,6 @@ public class NettyMQClient implements IMQClient {
         this.hostPort = hostPort;
         this.listener = listener;
         this.start();
-        if (this.listener != null) {
-            this.listener.setClient(this);
-        }
     }
 
     public void start() {

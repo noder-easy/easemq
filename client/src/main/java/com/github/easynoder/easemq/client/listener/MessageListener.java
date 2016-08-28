@@ -1,6 +1,5 @@
 package com.github.easynoder.easemq.client.listener;
 
-import com.github.easynoder.easemq.client.IMQClient;
 import com.github.easynoder.easemq.core.Message;
 
 /**
@@ -11,8 +10,7 @@ import com.github.easynoder.easemq.core.Message;
  */
 public interface MessageListener {
 
-    void setClient(IMQClient client);
-
+    //todo 消息监听器目前和topic绑定,后续可优化
     String getTopic();
 
     void onMessage(Message message);

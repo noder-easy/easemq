@@ -1,6 +1,5 @@
 package com.github.easynoder.easemq.client.listener;
 
-import com.github.easynoder.easemq.client.IMQClient;
 import com.github.easynoder.easemq.core.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,46 +10,22 @@ import org.slf4j.LoggerFactory;
  * Date:16/8/28
  * E-mail:easynoder@outlook.com
  */
-public class DefaultMessageListener implements MessageListener{
+public class DefaultMessageListener extends AbstractMessageListener {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMessageListener.class);
-
-    // 对应的topic
-    private String topic;
-
-    private IMQClient client;
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMessageListener.class);
 
     public DefaultMessageListener(String topic) {
-        this.topic = topic;
+        super(topic);
     }
 
-    public DefaultMessageListener (String topic, IMQClient client) {
-        this.topic = topic;
-        this.client = client;
+    public DefaultMessageListener(String topic, int consumers) {
+        super(topic, consumers);
     }
 
-    public String getTopic() {
-        return topic;
+    @Override
+    public void process(Message message) {
+        LOGGER.info("process message, topic = {}, receive message = {}", this.getTopic(), message);
     }
-
-    public DefaultMessageListener setTopic(String topic) {
-        this.topic = topic;
-        return this;
-    }
-
-    public IMQClient getClient() {
-        return client;
-    }
-
-    public void setClient(IMQClient client) {
-        this.client = client;
-    }
-
-    public void onMessage(Message message) {
-        // only print
-        LOGGER.info("process message, topic = {}, receive message = {}", topic, message);
-    }
-
 }
 
 

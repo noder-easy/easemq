@@ -3,7 +3,7 @@ package com.github.easynoder.easemq.client.test;
 import com.github.easynoder.easemq.client.IMQClient;
 import com.github.easynoder.easemq.client.listener.MessageListener;
 import com.github.easynoder.easemq.client.listener.DefaultMessageListener;
-import com.github.easynoder.easemq.client.netty.NettyMQClient;
+import com.github.easynoder.easemq.client.NettyMQClient;
 import com.github.easynoder.easemq.client.producer.DefaultProducer;
 import com.github.easynoder.easemq.client.producer.IProducer;
 import com.github.easynoder.easemq.core.Message;
