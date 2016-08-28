@@ -1,9 +1,11 @@
 package com.github.easynoder.easemq.server;
 
+import com.github.easynoder.easemq.commons.ContextHelper;
 import com.github.easynoder.easemq.core.exception.StoreException;
 import com.github.easynoder.easemq.core.store.IStore;
 import com.github.easynoder.easemq.core.store.memory.DirectMemoryStore;
 import io.netty.channel.ChannelHandlerContext;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,9 +23,9 @@ public class NettyMQServerClientManager<T> implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyMQServerClientManager.class);
 
-    private ConcurrentMap<String/*topic*/, ChannelHandlerContext> ctxMap = new ConcurrentHashMap<String, ChannelHandlerContext>();
+//    private ConcurrentMap<String/*topic*/, ChannelHandlerContext> ctxMap = new ConcurrentHashMap<String, ChannelHandlerContext>();
 
-    private ConcurrentMap<String, IStore<T>> queueMap = new ConcurrentHashMap<String, IStore<T>>();
+    private ConcurrentMap<String/*topic*/, IStore<T>> queueMap = new ConcurrentHashMap<String, IStore<T>>();
 
     private final Object QUEUE_LOCK = new Object();
 
@@ -48,12 +50,12 @@ public class NettyMQServerClientManager<T> implements Runnable {
         }
     }
 
-    public synchronized void addCtx(String topic, ChannelHandlerContext ctx) {
+/*    public synchronized void addCtx(String topic, ChannelHandlerContext ctx) {
         //ctxMap.replace(topic, ctx);
         if (ctxMap.get(topic) == null) {
             ctxMap.put(topic, ctx);
         }
-    }
+    }*/
 
     public void run() {
         LOGGER.info("NettyMQServerClientManager starting...");
@@ -81,7 +83,16 @@ public class NettyMQServerClientManager<T> implements Runnable {
                             LOGGER.debug("topic [{}] -> queue get message [{}]", topic, data);
                         }
 
-                        ChannelHandlerContext ctx = ctxMap.get(topic);
+                        String addr = ContextHelper.topicHostportMap.get(topic);
+                        if (StringUtils.isEmpty(addr)) {
+                            LOGGER.warn("topic [{}] consumer is empty!", topic);
+                            continue;
+                        }
+                        ChannelHandlerContext ctx = ContextHelper.ctxMap.get(addr);
+                        if (ctx == null) {
+                            LOGGER.warn("addr [] ctx is null!", addr);
+                            continue;
+                        }
                         if (ctx.channel().isActive()) {
                             ctx.channel().writeAndFlush(data);
                             if (LOGGER.isDebugEnabled()) {

@@ -1,10 +1,12 @@
 package com.github.easynoder.easemq.client.test;
 
+import com.github.easynoder.easemq.client.IMQClient;
+import com.github.easynoder.easemq.client.MessageListener;
+import com.github.easynoder.easemq.client.consumer.DefaultMessageListener;
 import com.github.easynoder.easemq.client.netty.NettyMQClient;
 import com.github.easynoder.easemq.client.producer.DefaultProducer;
 import com.github.easynoder.easemq.client.producer.IProducer;
 import com.github.easynoder.easemq.core.Message;
-import org.junit.Test;
 
 /**
  * Desc:
@@ -15,21 +17,34 @@ import org.junit.Test;
 
 public class DefaultProducerTest {
 
-    @Test
-    public void testSend() {
-        IProducer producer = new DefaultProducer(new NettyMQClient());
-        long topicNum = System.currentTimeMillis()/1000;
-        for (int i = 0;i < 10;i ++) {
-            Message.Header header = new Message.Header().setVersion(1).setExtra(0);
-            Message message = new Message().setTopic("easemq-"+ topicNum ).setBody("body"+i).setHeader(header);
-            producer.send(message.getTopic(), message);
-        }
 
-        System.out.println("send succ!");
+    public static void main(String[] args) throws InterruptedException {
+        startConsumer();
+        startProducer();
         try {
-            Thread.sleep(10* 1000);
+            Thread.sleep(1000* 1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
+
+    public static void startProducer() {
+        IProducer producer = new DefaultProducer(new NettyMQClient());
+        for (int i = 0;i < 10;i ++) {
+            Message.Header header = new Message.Header().setVersion(1).setExtra(0);
+            Message message = new Message().setTopic("easemq" ).setBody("body"+i).setHeader(header);
+            producer.send(message.getTopic(), message);
+        }
+
+        System.out.println("start producer succ!");
+    }
+
+    public static void startConsumer(){
+        MessageListener listener = new DefaultMessageListener("easemq");
+        IMQClient client = new NettyMQClient(listener);
+
+        System.out.println("start consumer succ!");
+    }
+
+
 }

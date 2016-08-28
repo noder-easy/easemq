@@ -1,6 +1,7 @@
 package com.github.easynoder.easemq.server.handler;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.github.easynoder.easemq.commons.ContextHelper;
 import com.github.easynoder.easemq.core.Message;
 import com.github.easynoder.easemq.core.store.IStore;
 import com.github.easynoder.easemq.core.store.memory.DirectMemoryStore;
@@ -34,7 +35,8 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("server channelActive>>>>>>>>"+ new Date());
+        LOGGER.info("server channelActive>>>>>>>>"+ new Date());
+        ContextHelper.addCtx(ctx.channel().remoteAddress().toString(), ctx);
     }
 
     @Override
@@ -44,7 +46,7 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("server received msg {} ", message);
         }
-        clientManager.addCtx(message.getTopic(), ctx);
+//        clientManager.addCtx(message.getTopic(), ctx);
         clientManager.addData(message.getTopic(), message.getBody());
     }
 

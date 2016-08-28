@@ -11,5 +11,7 @@ public interface IMQClient {
 
     public void send(String topic, Message message);
 
+    public void registeListener(MessageListener listener);
+
     public void close();
 }

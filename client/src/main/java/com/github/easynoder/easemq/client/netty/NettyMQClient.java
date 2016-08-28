@@ -1,6 +1,7 @@
 package com.github.easynoder.easemq.client.netty;
 
 import com.github.easynoder.easemq.client.IMQClient;
+import com.github.easynoder.easemq.client.MessageListener;
 import com.github.easynoder.easemq.client.handler.TcpClientHandler;
 import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.core.Message;
@@ -30,13 +31,33 @@ public class NettyMQClient implements IMQClient {
 
     private HostPort hostPort;
 
-    public NettyMQClient() {
-        this(new HostPort());
+    private MessageListener listener;
+/*
+    public MessageListener getListener() {
+        return listener;
     }
 
-    public NettyMQClient(HostPort hostPort) {
+    public NettyMQClient setListener(MessageListener listener) {
+        this.listener = listener;
+        return this;
+    }*/
+
+    public NettyMQClient() {
+        this(null);
+    }
+
+
+    public NettyMQClient(MessageListener listener) {
+        this(new HostPort(), listener);
+    }
+
+    public NettyMQClient(HostPort hostPort, MessageListener listener) {
         this.hostPort = hostPort;
+        this.listener = listener;
         this.start();
+        if (this.listener != null) {
+            this.listener.setClient(this);
+        }
     }
 
     public void start() {
@@ -53,7 +74,7 @@ public class NettyMQClient implements IMQClient {
                     pipeline.addLast("decoder", new StringDecoder(CharsetUtil.UTF_8));
                     pipeline.addLast("encoder", new StringEncoder(CharsetUtil.UTF_8));
 
-                    pipeline.addLast("handler", new TcpClientHandler());
+                    pipeline.addLast("handler", new TcpClientHandler(listener));
                 }
             });
 
@@ -69,6 +90,10 @@ public class NettyMQClient implements IMQClient {
     public void send(String topic, Message message) {
         Channel channel = channelFuture.channel();
         channel.writeAndFlush(gson.toJson(message));
+    }
+
+    public void registeListener(MessageListener listener) {
+        this.listener = listener;
     }
 
     public void close() {

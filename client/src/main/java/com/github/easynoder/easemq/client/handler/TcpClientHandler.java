@@ -1,7 +1,12 @@
 package com.github.easynoder.easemq.client.handler;
 
+import com.github.easynoder.easemq.client.MessageListener;
+import com.github.easynoder.easemq.commons.ContextHelper;
+import com.github.easynoder.easemq.core.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -14,17 +19,34 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 public class TcpClientHandler extends ChannelInboundHandlerAdapter {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TcpClientHandler.class);
+
     int count = 0;
+
+    private MessageListener listener;
+
+    public TcpClientHandler(MessageListener listener) {
+        this.listener = listener;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         //ctx.writeAndFlush("hi server, how are you?" + count++);
+        if (listener != null) {
+            // consumer 记录消费者ip:端口
+            LOGGER.info("registe consumer addr: {}", ctx.channel().localAddress().toString());
+//            ContextHelper.addConsumerAddr(ctx.channel().localAddress().toString());
+            ContextHelper.addTopicConsumer(listener.getTopic(), ctx.channel().localAddress().toString());
+        }
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         System.out.println("client接收到服务器返回的消息:" + msg);
-       // ctx.channel().writeAndFlush("hi server, how are you? "+ count++);
+        Message message = (Message) msg;
+        if (listener != null) {
+            listener.onMessage(message);
+        }
     }
 
     @Override
