@@ -1,7 +1,7 @@
 package com.github.easynoder.easemq.server;
 
 import com.github.easynoder.easemq.commons.util.GsonUtils;
-import com.github.easynoder.easemq.core.Message;
+import com.github.easynoder.easemq.core.protocol.Message;
 import com.github.easynoder.easemq.core.exception.StoreException;
 import com.github.easynoder.easemq.core.store.IStore;
 import com.github.easynoder.easemq.core.store.memory.DirectMemoryStore;

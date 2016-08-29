@@ -3,7 +3,9 @@ package com.github.easynoder.easemq.client;
 import com.github.easynoder.easemq.client.listener.MessageListener;
 import com.github.easynoder.easemq.client.handler.TcpClientHandler;
 import com.github.easynoder.easemq.commons.HostPort;
-import com.github.easynoder.easemq.core.Message;
+import com.github.easynoder.easemq.core.protocol.EasePacket;
+import com.github.easynoder.easemq.core.protocol.EasePacketHeader;
+import com.github.easynoder.easemq.core.protocol.Message;
 import com.google.gson.Gson;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -79,13 +81,20 @@ public class NettyMQClient implements IMQClient {
 
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
         }
     }
 
     public void send(String topic, Message message) {
+      /*  Channel channel = channelFuture.channel();
+        channel.writeAndFlush(gson.toJson(message));*/
+        send(topic, message, null);
+    }
+
+    public void send(String topic, Message message, Message.Header header) {
+        EasePacketHeader header1 = new EasePacketHeader().setTopic(topic);
+        EasePacket packet = new EasePacket().setHeader(header1).setMessage(message);
         Channel channel = channelFuture.channel();
-        channel.writeAndFlush(gson.toJson(message));
+        channel.writeAndFlush(gson.toJson(packet));
     }
 
     public void registeListener(MessageListener listener) {

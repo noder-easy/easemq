@@ -1,12 +1,11 @@
 package com.github.easynoder.easemq.client.listener;
 
-import com.github.easynoder.easemq.core.Message;
+import com.github.easynoder.easemq.core.protocol.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Desc:

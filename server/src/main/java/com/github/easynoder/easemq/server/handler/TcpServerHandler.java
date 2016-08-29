@@ -1,9 +1,10 @@
 package com.github.easynoder.easemq.server.handler;
 
 import com.github.easynoder.easemq.commons.util.GsonUtils;
-import com.github.easynoder.easemq.core.Message;
+import com.github.easynoder.easemq.core.protocol.CmdType;
+import com.github.easynoder.easemq.core.protocol.EasePacket;
+import com.github.easynoder.easemq.core.protocol.Message;
 import com.github.easynoder.easemq.server.NettyMQServerClientManager;
-import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -36,11 +37,16 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-        Message message = GsonUtils.getGson().fromJson((String)msg, Message.class);
+        EasePacket packet = GsonUtils.getGson().fromJson((String)msg, EasePacket.class);
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("server received msg {} ", message);
+            LOGGER.debug("server received msg {} ", packet);
         }
-        clientManager.addMessage(message.getTopic(), message);
+        if (packet.getHeader().getCmdType() == CmdType.ACK) {
+             // TODO: 16/8/29
+        } else {
+            // TODO: 16/8/29
+        }
+        clientManager.addMessage(packet.getHeader().getTopic(), packet.getMessage());
     }
 
 

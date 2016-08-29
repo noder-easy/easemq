@@ -1,6 +1,6 @@
 package com.github.easynoder.easemq.client.producer;
 
-import com.github.easynoder.easemq.core.Message;
+import com.github.easynoder.easemq.core.protocol.Message;
 
 /**
  * Desc:

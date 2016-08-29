@@ -1,6 +1,5 @@
-package com.github.easynoder.easemq.core;
+package com.github.easynoder.easemq.core.protocol;
 
-import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -8,16 +7,14 @@ import java.util.Objects;
  * Author:easynoder
  * Date:16/8/24
  * E-mail:easynoder@outlook.com
+ * <p>
+ * {header:{version:1,cmdType:1,topic:"easemq",extra:1},body:"mybody"}
  */
-public class Message implements Serializable{
-
-    public static final long serialVersionUID = 1L;
+public class Message {
 
     private Header header;
 
     private String body;
-
-    private String topic;
 
     public Header getHeader() {
         return header;
@@ -37,21 +34,11 @@ public class Message implements Serializable{
         return this;
     }
 
-    public String getTopic() {
-        return topic;
-    }
-
-    public Message setTopic(String topic) {
-        this.topic = topic;
-        return this;
-    }
-
     @Override
     public String toString() {
         final StringBuffer sb = new StringBuffer("Message{");
         sb.append("header='").append(header).append('\'');
         sb.append(", body='").append(body).append('\'');
-        sb.append(", topic='").append(topic).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -60,6 +47,10 @@ public class Message implements Serializable{
     public static class Header {
 
         private int version = 0;
+
+        private int cmdType;
+
+        private String topic;
 
         private int extra;
 
@@ -81,18 +72,38 @@ public class Message implements Serializable{
             return this;
         }
 
+        public int getCmdType() {
+            return cmdType;
+        }
+
+        public Header setCmdType(int cmdType) {
+            this.cmdType = cmdType;
+            return this;
+        }
+
+        public String getTopic() {
+            return topic;
+        }
+
+        public Header setTopic(String topic) {
+            this.topic = topic;
+            return this;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Header header = (Header) o;
             return version == header.version &&
-                    extra == header.extra;
+                    cmdType == header.cmdType &&
+                    extra == header.extra &&
+                    Objects.equals(topic, header.topic);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(version, extra);
+            return Objects.hash(version, cmdType, topic, extra);
         }
 
 
@@ -100,6 +111,8 @@ public class Message implements Serializable{
         public String toString() {
             final StringBuffer sb = new StringBuffer("Header{");
             sb.append("version=").append(version);
+            sb.append(", cmdType=").append(cmdType);
+            sb.append(", topic='").append(topic).append('\'');
             sb.append(", extra=").append(extra);
             sb.append('}');
             return sb.toString();

@@ -1,5 +1,7 @@
 package com.github.easynoder.easemq.client;
 
+import java.util.concurrent.ConcurrentMap;
+
 /**
  * Desc:
  * Author:easynoder
@@ -9,4 +11,5 @@ package com.github.easynoder.easemq.client;
 public class MQClientManager {
 
     public IMQClient imqClient;
+
 }

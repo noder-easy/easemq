@@ -3,7 +3,10 @@ package com.github.easynoder.easemq.client.handler;
 import com.github.easynoder.easemq.client.listener.MessageListener;
 import com.github.easynoder.easemq.commons.helper.ContextHelper;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
-import com.github.easynoder.easemq.core.Message;
+import com.github.easynoder.easemq.core.protocol.CmdType;
+import com.github.easynoder.easemq.core.protocol.EasePacket;
+import com.github.easynoder.easemq.core.protocol.Message;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -44,10 +47,17 @@ public class TcpClientHandler extends ChannelInboundHandlerAdapter {
         if (listener != null) {
             listener.onMessage(message);
         }
+        // ack确认
+       /* Channel channel = ctx.channel();
+        Message.Header header = new Message.Header().setVersion(1).setCmdType(CmdType.ACK).setVersion(1).setVersion(1);
+        Message deliverAck = new Message().setHeader(header).setBody("ack");
+        channel.write(deliverAck);
+        channel.flush();*/
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         LOGGER.error("exception: ", cause);
+        ctx.close();
     }
 }
