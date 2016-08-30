@@ -1,5 +1,7 @@
 package com.github.easynoder.easemq.core.protocol;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Desc:
  * Author:easynoder
@@ -10,11 +12,24 @@ public class EasePacketHeader {
 
     private int version = 0;
 
-    private int cmdType;
+    private byte cmdType;
 
-    private String topic;
+    private int opaque;
 
     private int extra;
+
+    private static final AtomicInteger atomicOpaqueu = new AtomicInteger(1);
+
+    public EasePacketHeader(byte cmdType) {
+        this(cmdType, 0, atomicOpaqueu.decrementAndGet() % Integer.MAX_VALUE, 0);
+    }
+
+    private EasePacketHeader(byte cmdType, int version, int opaque, int extra) {
+        this.version = version;
+        this.cmdType = cmdType;
+        this.opaque = opaque;
+        this.extra = extra;
+    }
 
     public int getVersion() {
         return version;
@@ -25,21 +40,21 @@ public class EasePacketHeader {
         return this;
     }
 
-    public int getCmdType() {
+    public byte getCmdType() {
         return cmdType;
     }
 
-    public EasePacketHeader setCmdType(int cmdType) {
+    public EasePacketHeader setCmdType(byte cmdType) {
         this.cmdType = cmdType;
         return this;
     }
 
-    public String getTopic() {
-        return topic;
+    public int getOpaque() {
+        return opaque;
     }
 
-    public EasePacketHeader setTopic(String topic) {
-        this.topic = topic;
+    public EasePacketHeader setOpaque(int opaque) {
+        this.opaque = opaque;
         return this;
     }
 
@@ -58,7 +73,7 @@ public class EasePacketHeader {
         final StringBuffer sb = new StringBuffer("EasePacketHeader{");
         sb.append("version=").append(version);
         sb.append(", cmdType=").append(cmdType);
-        sb.append(", topic='").append(topic).append('\'');
+        sb.append(", opaque=").append(opaque);
         sb.append(", extra=").append(extra);
         sb.append('}');
         return sb.toString();

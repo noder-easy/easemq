@@ -8,7 +8,7 @@ import java.util.Objects;
  * Date:16/8/24
  * E-mail:easynoder@outlook.com
  * <p>
- * {header:{version:1,cmdType:1,topic:"easemq",extra:1},body:"mybody"}
+ * {header:{version:1,cmdType:1,opaque:"1",extra:1},message:{header:{topic:"easemq"},body:"mybody"}
  */
 public class Message {
 
@@ -46,40 +46,7 @@ public class Message {
 
     public static class Header {
 
-        private int version = 0;
-
-        private int cmdType;
-
         private String topic;
-
-        private int extra;
-
-        public int getVersion() {
-            return version;
-        }
-
-        public Header setVersion(int version) {
-            this.version = version;
-            return this;
-        }
-
-        public int getExtra() {
-            return extra;
-        }
-
-        public Header setExtra(int extra) {
-            this.extra = extra;
-            return this;
-        }
-
-        public int getCmdType() {
-            return cmdType;
-        }
-
-        public Header setCmdType(int cmdType) {
-            this.cmdType = cmdType;
-            return this;
-        }
 
         public String getTopic() {
             return topic;
@@ -91,31 +58,25 @@ public class Message {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Header header = (Header) o;
-            return version == header.version &&
-                    cmdType == header.cmdType &&
-                    extra == header.extra &&
-                    Objects.equals(topic, header.topic);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(version, cmdType, topic, extra);
-        }
-
-
-        @Override
         public String toString() {
             final StringBuffer sb = new StringBuffer("Header{");
-            sb.append("version=").append(version);
-            sb.append(", cmdType=").append(cmdType);
-            sb.append(", topic='").append(topic).append('\'');
-            sb.append(", extra=").append(extra);
+            sb.append("topic='").append(topic).append('\'');
             sb.append('}');
             return sb.toString();
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Message message = (Message) o;
+        return Objects.equals(header, message.header) &&
+                Objects.equals(body, message.body);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(header, body);
     }
 }
