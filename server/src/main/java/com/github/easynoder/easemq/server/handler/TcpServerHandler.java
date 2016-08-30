@@ -1,6 +1,7 @@
 package com.github.easynoder.easemq.server.handler;
 
 import com.github.easynoder.easemq.commons.util.GsonUtils;
+import com.github.easynoder.easemq.core.AckUtils;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
 import com.github.easynoder.easemq.core.protocol.Message;
@@ -41,12 +42,17 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("server received msg {} ", packet);
         }
-        if (packet.getHeader().getCmdType() == CmdType.ACK) {
+        if (packet.getHeader().getCmdType() == CmdType.CMD_ACK) {
              // TODO: 16/8/29
+            LOGGER.info("SEVER receive ack = {}", packet);
         } else {
             // TODO: 16/8/29
+            clientManager.addMessage(packet.getHeader().getTopic(), packet.getMessage());
+            //服务端收到消息 ack回执
+            EasePacket response = AckUtils.buildAckPacket(packet);
+            ctx.writeAndFlush(GsonUtils.getGson().toJson(response));
+
         }
-        clientManager.addMessage(packet.getHeader().getTopic(), packet.getMessage());
     }
 
 

@@ -1,6 +1,9 @@
 package com.github.easynoder.easemq.server;
 
 import com.github.easynoder.easemq.commons.util.GsonUtils;
+import com.github.easynoder.easemq.core.protocol.CmdType;
+import com.github.easynoder.easemq.core.protocol.EasePacket;
+import com.github.easynoder.easemq.core.protocol.EasePacketHeader;
 import com.github.easynoder.easemq.core.protocol.Message;
 import com.github.easynoder.easemq.core.exception.StoreException;
 import com.github.easynoder.easemq.core.store.IStore;
@@ -118,7 +121,11 @@ public class NettyMQServerClientManager implements Runnable {
                             continue;
                         }
                         if (ctx.channel().isActive()) {
-                            ctx.channel().writeAndFlush(GsonUtils.getGson().toJson(data));
+
+                            EasePacket msgPacket = new EasePacket();
+                            msgPacket.setHeader(new EasePacketHeader().setCmdType(CmdType.CMD_STRING).setTopic(topic).setExtra(1).setVersion(1));
+                            msgPacket.setMessage(data);
+                            ctx.channel().writeAndFlush(GsonUtils.getGson().toJson(msgPacket));
                             if (LOGGER.isDebugEnabled()) {
                                 LOGGER.debug("addr -> [{}], topic -> [{}] , channel send message [{}] ok!", addr, topic, data);
                             }

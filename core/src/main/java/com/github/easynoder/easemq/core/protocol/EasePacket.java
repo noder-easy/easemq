@@ -29,4 +29,13 @@ public class EasePacket {
         this.message = message;
         return this;
     }
+
+    @Override
+    public String toString() {
+        final StringBuffer sb = new StringBuffer("EasePacket{");
+        sb.append("header=").append(header);
+        sb.append(", message=").append(message);
+        sb.append('}');
+        return sb.toString();
+    }
 }

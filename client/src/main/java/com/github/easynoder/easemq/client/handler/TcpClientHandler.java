@@ -3,6 +3,7 @@ package com.github.easynoder.easemq.client.handler;
 import com.github.easynoder.easemq.client.listener.MessageListener;
 import com.github.easynoder.easemq.commons.helper.ContextHelper;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
+import com.github.easynoder.easemq.core.AckUtils;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
 import com.github.easynoder.easemq.core.protocol.Message;
@@ -43,16 +44,18 @@ public class TcpClientHandler extends ChannelInboundHandlerAdapter {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("client = {}, topic = {}, receive message = {} ", ctx.channel().localAddress().toString(), listener.getTopic(), msg);
         }
-        Message message = GsonUtils.getGson().fromJson((String) msg, Message.class);
-        if (listener != null) {
-            listener.onMessage(message);
+        EasePacket packet = GsonUtils.getGson().fromJson((String) msg, EasePacket.class);
+        if (packet.getHeader().getCmdType() == CmdType.CMD_ACK) {
+            LOGGER.info("client receive ack = {}", packet);
+        } else {
+            if (listener != null) {
+                listener.onMessage(packet.getMessage());
+            }
+            // 客户端正常消费完后 ack 回执
+            EasePacket ackPacket = AckUtils.buildAckPacket(packet);
+            ctx.writeAndFlush(GsonUtils.getGson().toJson(ackPacket));
         }
-        // ack确认
-       /* Channel channel = ctx.channel();
-        Message.Header header = new Message.Header().setVersion(1).setCmdType(CmdType.ACK).setVersion(1).setVersion(1);
-        Message deliverAck = new Message().setHeader(header).setBody("ack");
-        channel.write(deliverAck);
-        channel.flush();*/
+
     }
 
     @Override

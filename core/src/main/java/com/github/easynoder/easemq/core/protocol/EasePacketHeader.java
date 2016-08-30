@@ -51,4 +51,16 @@ public class EasePacketHeader {
         this.extra = extra;
         return this;
     }
+
+
+    @Override
+    public String toString() {
+        final StringBuffer sb = new StringBuffer("EasePacketHeader{");
+        sb.append("version=").append(version);
+        sb.append(", cmdType=").append(cmdType);
+        sb.append(", topic='").append(topic).append('\'');
+        sb.append(", extra=").append(extra);
+        sb.append('}');
+        return sb.toString();
+    }
 }
