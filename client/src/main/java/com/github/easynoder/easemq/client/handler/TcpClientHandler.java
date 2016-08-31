@@ -6,8 +6,6 @@ import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.AckUtils;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
-import com.github.easynoder.easemq.core.protocol.Message;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -52,7 +50,7 @@ public class TcpClientHandler extends ChannelInboundHandlerAdapter {
                 listener.onMessage(packet.getMessage());
             }
             // 客户端正常消费完后 ack 回执
-            EasePacket ackPacket = AckUtils.buildAckPacket(packet);
+            EasePacket ackPacket = AckUtils.buildAckPacket(packet.getMessage().getHeader(), true);
             ctx.writeAndFlush(GsonUtils.getGson().toJson(ackPacket));
         }
 

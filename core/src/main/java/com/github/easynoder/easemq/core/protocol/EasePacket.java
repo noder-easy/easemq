@@ -10,7 +10,7 @@ public class EasePacket {
 
     private EasePacketHeader header;
 
-    private Message message;
+    private GenerateMessage message;
 
     public EasePacketHeader getHeader() {
         return header;
@@ -21,11 +21,11 @@ public class EasePacket {
         return this;
     }
 
-    public Message getMessage() {
+    public GenerateMessage getMessage() {
         return message;
     }
 
-    public EasePacket setMessage(Message message) {
+    public EasePacket setMessage(GenerateMessage message) {
         this.message = message;
         return this;
     }

@@ -4,7 +4,7 @@ import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
 import com.github.easynoder.easemq.core.protocol.EasePacketHeader;
-import com.github.easynoder.easemq.core.protocol.Message;
+import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 import com.github.easynoder.easemq.core.exception.StoreException;
 import com.github.easynoder.easemq.core.store.IStore;
 import com.github.easynoder.easemq.core.store.memory.DirectMemoryStore;
@@ -34,7 +34,7 @@ public class NettyMQServerClientManager implements Runnable {
     /**
      * topic 对应的队列
      */
-    private ConcurrentMap<String/*topic*/, IStore<Message>> queueMap = new ConcurrentHashMap<String, IStore<Message>>();
+    private ConcurrentMap<String/*topic*/, IStore<GenerateMessage>> queueMap = new ConcurrentHashMap<String, IStore<GenerateMessage>>();
 
     /**
      * server端存储的所有的连接
@@ -45,7 +45,7 @@ public class NettyMQServerClientManager implements Runnable {
 
     private final Object QUEUE_LOCK = new Object();
 
-    public synchronized void addMessage(String topic, Message message) {
+    public synchronized void addMessage(String topic, GenerateMessage message) {
         try {
 
             /*if (queueMap.get(topic) == null) {
@@ -57,7 +57,7 @@ public class NettyMQServerClientManager implements Runnable {
                 }
             }*/
             if (queueMap.get(topic) == null) {
-                IStore<Message> iStore = new DirectMemoryStore<Message>(1000);
+                IStore<GenerateMessage> iStore = new DirectMemoryStore<GenerateMessage>(1000);
                 queueMap.put(topic, iStore);
             }
             queueMap.get(topic).store(message);
@@ -87,14 +87,14 @@ public class NettyMQServerClientManager implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        for (final Map.Entry<String, IStore<Message>> entry : queueMap.entrySet()) {
+        for (final Map.Entry<String, IStore<GenerateMessage>> entry : queueMap.entrySet()) {
 
             new Thread(new Runnable() {
                 public void run() {
                     String topic = entry.getKey();
-                    IStore<Message> queue = entry.getValue();
+                    IStore<GenerateMessage> queue = entry.getValue();
                     while (true) {
-                        Message data = null;
+                        GenerateMessage data = null;
                         try {
                             data = queue.get();
                         } catch (StoreException e) {
@@ -123,7 +123,7 @@ public class NettyMQServerClientManager implements Runnable {
                         if (ctx.channel().isActive()) {
 
                             EasePacket msgPacket = new EasePacket();
-                            msgPacket.setHeader(new EasePacketHeader().setCmdType(CmdType.CMD_STRING).setTopic(topic).setExtra(1).setVersion(1));
+                            msgPacket.setHeader(new EasePacketHeader(CmdType.CMD_STRING_MSG));
                             msgPacket.setMessage(data);
                             ctx.channel().writeAndFlush(GsonUtils.getGson().toJson(msgPacket));
                             if (LOGGER.isDebugEnabled()) {

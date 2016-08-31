@@ -1,7 +1,8 @@
 package com.github.easynoder.easemq.client.producer;
 
 import com.github.easynoder.easemq.client.IMQClient;
-import com.github.easynoder.easemq.core.protocol.Message;
+import com.github.easynoder.easemq.core.protocol.CmdType;
+import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 
 /**
  * Desc: 调用入口
@@ -17,8 +18,8 @@ public class DefaultProducer implements IProducer {
         this.client = client;
     }
 
-    public void send(String topic, Message message) {
-        client.send(topic, message);
+    public void send(String topic, GenerateMessage message) {
+        client.send(CmdType.CMD_STRING_MSG, message);
     }
 
 }

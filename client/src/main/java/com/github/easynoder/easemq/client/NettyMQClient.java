@@ -6,7 +6,7 @@ import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
 import com.github.easynoder.easemq.core.protocol.EasePacketHeader;
-import com.github.easynoder.easemq.core.protocol.Message;
+import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 import com.google.gson.Gson;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -18,8 +18,6 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,20 +71,13 @@ public class NettyMQClient implements IMQClient {
         }
     }
 
-/*    public void send(String topic, Message message) {
-      *//*  Channel channel = channelFuture.channel();
-        channel.writeAndFlush(gson.toJson(message));*//*
-        send(topic, message, null);
-    }*/
 
     /**
-     * 发送
-     *
-     * @param topic
+     * @param cmdType
      * @param message
      */
-    public void send(final String topic, final Message message) {
-        EasePacketHeader packetHeader = new EasePacketHeader().setTopic(topic).setCmdType(message.getHeader().getCmdType());
+    public void send(final byte cmdType, final GenerateMessage message) {
+        EasePacketHeader packetHeader = new EasePacketHeader(cmdType);
         EasePacket packet = new EasePacket().setHeader(packetHeader).setMessage(message);
         Channel channel = channelFuture.channel();
         channel.write(gson.toJson(packet));
@@ -96,7 +87,7 @@ public class NettyMQClient implements IMQClient {
                 if (channelFuture.isSuccess()) {
                     // TODO: 16/8/30 统计
                 } else {
-                    LOGGER.warn("send error topic = {}, message = {}", topic, message);
+                    LOGGER.warn("send error cmdType = {}, message = {}", cmdType, message);
                 }
             }
         });

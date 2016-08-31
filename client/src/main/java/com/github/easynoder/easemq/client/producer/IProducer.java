@@ -1,6 +1,6 @@
 package com.github.easynoder.easemq.client.producer;
 
-import com.github.easynoder.easemq.core.protocol.Message;
+import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 
 /**
  * Desc:
@@ -16,5 +16,5 @@ public interface IProducer {
      * @param topic
      * @param message
      */
-    public void send(String topic, Message message);
+    public void send(String topic, GenerateMessage message);
 }

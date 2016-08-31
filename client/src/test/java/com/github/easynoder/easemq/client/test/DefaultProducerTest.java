@@ -6,9 +6,7 @@ import com.github.easynoder.easemq.client.NettyMQClient;
 import com.github.easynoder.easemq.client.producer.DefaultProducer;
 import com.github.easynoder.easemq.client.producer.IProducer;
 import com.github.easynoder.easemq.core.protocol.CmdType;
-import com.github.easynoder.easemq.core.protocol.EasePacket;
-import com.github.easynoder.easemq.core.protocol.EasePacketHeader;
-import com.github.easynoder.easemq.core.protocol.Message;
+import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 
 /**
  * Desc:
@@ -33,8 +31,8 @@ public class DefaultProducerTest {
         MessageListener listener = new DefaultMessageListener("easemq");
         IProducer producer = new DefaultProducer(new NettyMQClient(listener));
         for (int i = 0;i < 1;i ++) {
-            Message.Header header = new Message.Header().setVersion(1).setTopic("easemq").setExtra(0).setCmdType(CmdType.CMD_STRING);
-            Message message = new Message().setBody("body"+i).setHeader(header);
+            GenerateMessage.Header header = new GenerateMessage.Header().setTopic("easemq");
+            GenerateMessage message = new GenerateMessage().setBody("body"+i).setHeader(header);
             producer.send(message.getHeader().getTopic(), message);
         }
 

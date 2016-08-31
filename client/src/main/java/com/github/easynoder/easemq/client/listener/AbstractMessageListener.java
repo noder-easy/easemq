@@ -1,6 +1,6 @@
 package com.github.easynoder.easemq.client.listener;
 
-import com.github.easynoder.easemq.core.protocol.Message;
+import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ public abstract class AbstractMessageListener implements MessageListener{
         this.topic = topic;
     }
 
-    public void onMessage(final Message message) {
+    public void onMessage(final GenerateMessage message) {
         executor.submit(new Runnable() {
             public void run() {
                 try{
@@ -65,5 +65,5 @@ public abstract class AbstractMessageListener implements MessageListener{
         });
     }
 
-    public abstract void process(Message message);
+    public abstract void process(GenerateMessage message);
 }

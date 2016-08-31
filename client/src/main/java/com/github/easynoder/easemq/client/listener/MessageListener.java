@@ -1,6 +1,6 @@
 package com.github.easynoder.easemq.client.listener;
 
-import com.github.easynoder.easemq.core.protocol.Message;
+import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 
 /**
  * Desc:
@@ -13,5 +13,5 @@ public interface MessageListener {
     //todo 消息监听器目前和topic绑定,后续可优化
     String getTopic();
 
-    void onMessage(Message message);
+    void onMessage(GenerateMessage message);
 }

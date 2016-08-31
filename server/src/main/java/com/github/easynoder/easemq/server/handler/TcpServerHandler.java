@@ -4,7 +4,6 @@ import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.AckUtils;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
-import com.github.easynoder.easemq.core.protocol.Message;
 import com.github.easynoder.easemq.server.NettyMQServerClientManager;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -47,9 +46,9 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
             LOGGER.info("SEVER receive ack = {}", packet);
         } else {
             // TODO: 16/8/29
-            clientManager.addMessage(packet.getHeader().getTopic(), packet.getMessage());
+            clientManager.addMessage(packet.getMessage().getHeader().getTopic(), packet.getMessage());
             //服务端收到消息 ack回执
-            EasePacket response = AckUtils.buildAckPacket(packet);
+            EasePacket response = AckUtils.buildAckPacket(packet.getMessage().getHeader(), true);
             ctx.writeAndFlush(GsonUtils.getGson().toJson(response));
 
         }

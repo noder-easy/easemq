@@ -1,6 +1,6 @@
 package com.github.easynoder.easemq.client.listener;
 
-import com.github.easynoder.easemq.core.protocol.Message;
+import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +23,7 @@ public class DefaultMessageListener extends AbstractMessageListener {
     }
 
     @Override
-    public void process(Message message) {
+    public void process(GenerateMessage message) {
         LOGGER.info("process message, topic = {}, receive message = {}", this.getTopic(), message);
     }
 }
