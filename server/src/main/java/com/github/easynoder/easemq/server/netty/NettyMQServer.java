@@ -4,7 +4,7 @@ import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.commons.factory.JedisFactory;
 import com.github.easynoder.easemq.server.IMQServer;
 import com.github.easynoder.easemq.server.NettyMQServerClientManager;
-import com.github.easynoder.easemq.server.handler.TcpServerHandler;
+import com.github.easynoder.easemq.server.handler.EaseMQServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -62,7 +62,7 @@ public class NettyMQServer implements IMQServer{
                         pipeline.addLast(new LengthFieldPrepender(4));
                         pipeline.addLast(new StringDecoder(CharsetUtil.UTF_8));
                         pipeline.addLast(new StringEncoder(CharsetUtil.UTF_8));
-                        pipeline.addLast(new TcpServerHandler(clienManager));
+                        pipeline.addLast(new EaseMQServerHandler(clienManager));
 
                     }
                 });

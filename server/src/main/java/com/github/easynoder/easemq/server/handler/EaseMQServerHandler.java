@@ -18,13 +18,13 @@ import java.util.Date;
  * Date:16/7/24
  * E-mail:easynoder@outlook.com
  */
-public class TcpServerHandler extends ChannelInboundHandlerAdapter {
+public class EaseMQServerHandler extends ChannelInboundHandlerAdapter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TcpServerHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EaseMQServerHandler.class);
 
     private NettyMQServerClientManager clientManager ;
 
-    public TcpServerHandler(NettyMQServerClientManager clientManager) {
+    public EaseMQServerHandler(NettyMQServerClientManager clientManager) {
         this.clientManager = clientManager;
     }
 
@@ -42,15 +42,20 @@ public class TcpServerHandler extends ChannelInboundHandlerAdapter {
             LOGGER.debug("server received msg {} ", packet);
         }
         if (packet.getHeader().getCmdType() == CmdType.CMD_ACK) {
-             // TODO: 16/8/29
+             // TODO: 16/8/29 其他类型的消息处理
             LOGGER.info("SEVER receive ack = {}", packet);
         } else {
-            // TODO: 16/8/29
-            clientManager.addMessage(packet.getMessage().getHeader().getTopic(), packet.getMessage());
+            boolean succ = true;
+            try{
+                clientManager.addMessage(packet.getMessage().getHeader().getTopic(), packet);
+            }catch (Exception e) {
+                LOGGER.error("MQ Server store message FAIL", e);
+                succ = false;
+            }
             //服务端收到消息 ack回执
-            EasePacket response = AckUtils.buildAckPacket(packet.getMessage().getHeader(), true);
+            EasePacket response = AckUtils.buildAckPacket(packet, packet.getMessage().getHeader(), succ);
+            LOGGER.info("send ack = {}", GsonUtils.getGson().toJson(response));
             ctx.writeAndFlush(GsonUtils.getGson().toJson(response));
-
         }
     }
 

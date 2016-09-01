@@ -1,7 +1,7 @@
 package com.github.easynoder.easemq.client;
 
 import com.github.easynoder.easemq.client.listener.MessageListener;
-import com.github.easynoder.easemq.client.handler.TcpClientHandler;
+import com.github.easynoder.easemq.client.handler.EaseMQClientHandler;
 import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
@@ -59,7 +59,7 @@ public class NettyMQClient implements IMQClient {
                     pipeline.addLast("decoder", new StringDecoder(CharsetUtil.UTF_8));
                     pipeline.addLast("encoder", new StringEncoder(CharsetUtil.UTF_8));
 
-                    pipeline.addLast("handler", new TcpClientHandler(listener));
+                    pipeline.addLast("handler", new EaseMQClientHandler(listener));
                 }
             });
 

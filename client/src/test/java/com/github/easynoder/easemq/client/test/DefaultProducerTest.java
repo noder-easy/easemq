@@ -8,6 +8,8 @@ import com.github.easynoder.easemq.client.producer.IProducer;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 
+import java.util.UUID;
+
 /**
  * Desc:
  * Author:easynoder
@@ -31,8 +33,13 @@ public class DefaultProducerTest {
         MessageListener listener = new DefaultMessageListener("easemq");
         IProducer producer = new DefaultProducer(new NettyMQClient(listener));
         for (int i = 0;i < 1;i ++) {
-            GenerateMessage.Header header = new GenerateMessage.Header().setTopic("easemq");
-            GenerateMessage message = new GenerateMessage().setBody("body"+i).setHeader(header);
+            GenerateMessage.Header header = new GenerateMessage.Header();
+            header.setTopic("easemq");
+            header.setMessageId(UUID.randomUUID().toString());
+            header.setTimestamp(System.currentTimeMillis());
+            GenerateMessage message = new GenerateMessage();
+            message.setBody("body"+i);
+            message.setHeader(header);
             producer.send(message.getHeader().getTopic(), message);
         }
 

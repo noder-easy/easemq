@@ -10,11 +10,23 @@ import com.github.easynoder.easemq.core.protocol.*;
  */
 public class AckUtils {
 
-    public static EasePacket buildAckPacket(GenerateMessage.Header srcHeader, boolean isSuccess) {
-        AckMessage.Header header = new AckMessage.Header().setTopic(srcHeader.getTopic()).setMessageId(srcHeader.getMessageId());
-        GenerateMessage ackMessage = new AckMessage().setHeader(header).setBody("ack");
+    public static EasePacket buildAckPacket(EasePacket packet, GenerateMessage.Header srcHeader, boolean succ) {
+        // TODO: 16/9/1 时间戳优化
+        AckMessage.Header header = new AckMessage.Header();
+        header.setTopic(srcHeader.getTopic());
+        header.setMessageId(srcHeader.getMessageId());
+        header.setTimestamp(System.currentTimeMillis());
+
+        AckMessage ackMessage = new AckMessage();
+        ackMessage.setHeader(header);
+        ackMessage.setSuccess(succ);
 
         EasePacketHeader packetHeader = new EasePacketHeader(CmdType.CMD_ACK);
+        packetHeader.setOpaque(packet.getHeader().getOpaque());
+        packetHeader.setExtra(packet.getHeader().getExtra());
+        packetHeader.setVersion(packet.getHeader().getVersion());
+
+
         EasePacket ackPacket = new EasePacket().setHeader(packetHeader).setMessage(ackMessage);
 
         return ackPacket;

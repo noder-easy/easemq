@@ -20,18 +20,16 @@ public class GenerateMessage {
         return header;
     }
 
-    public GenerateMessage setHeader(Header header) {
+    public void setHeader(Header header) {
         this.header = header;
-        return this;
     }
 
     public String getBody() {
         return body;
     }
 
-    public GenerateMessage setBody(String body) {
+    public void setBody(String body) {
         this.body = body;
-        return this;
     }
 
     @Override
@@ -47,15 +45,23 @@ public class GenerateMessage {
     public static class Header {
 
         private String messageId;
+        private long timestamp;
         private String topic;
 
         public String getTopic() {
             return topic;
         }
 
-        public Header setTopic(String topic) {
+        public void setTopic(String topic) {
             this.topic = topic;
-            return this;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(long timestamp) {
+            this.timestamp = timestamp;
         }
 
         public String getMessageId() {
@@ -71,6 +77,7 @@ public class GenerateMessage {
         public String toString() {
             final StringBuffer sb = new StringBuffer("Header{");
             sb.append("messageId='").append(messageId).append('\'');
+            sb.append(", timestamp=").append(timestamp);
             sb.append(", topic='").append(topic).append('\'');
             sb.append('}');
             return sb.toString();

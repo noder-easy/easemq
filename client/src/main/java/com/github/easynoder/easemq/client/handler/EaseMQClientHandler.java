@@ -18,13 +18,13 @@ import org.slf4j.LoggerFactory;
  * Date:16/7/24
  * E-mail:easynoder@outlook.com
  */
-public class TcpClientHandler extends ChannelInboundHandlerAdapter {
+public class EaseMQClientHandler extends ChannelInboundHandlerAdapter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TcpClientHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EaseMQClientHandler.class);
 
     private MessageListener listener;
 
-    public TcpClientHandler(MessageListener listener) {
+    public EaseMQClientHandler(MessageListener listener) {
         this.listener = listener;
     }
 
@@ -47,11 +47,18 @@ public class TcpClientHandler extends ChannelInboundHandlerAdapter {
             LOGGER.info("client receive ack = {}", packet);
         } else {
             if (listener != null) {
-                listener.onMessage(packet.getMessage());
+                boolean succ = true;
+                try {
+                    listener.onMessage(packet.getMessage());
+                }catch (Exception e) {
+                    LOGGER.error("MQ Client receive message FAIL", e);
+                    succ = false;
+                }
+                // 客户端正常消费完后 ack 回执
+                EasePacket ackPacket = AckUtils.buildAckPacket(packet, packet.getMessage().getHeader(), succ);
+                ctx.writeAndFlush(GsonUtils.getGson().toJson(ackPacket));
             }
-            // 客户端正常消费完后 ack 回执
-            EasePacket ackPacket = AckUtils.buildAckPacket(packet.getMessage().getHeader(), true);
-            ctx.writeAndFlush(GsonUtils.getGson().toJson(ackPacket));
+
         }
 
     }
