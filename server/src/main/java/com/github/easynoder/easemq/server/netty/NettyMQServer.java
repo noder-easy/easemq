@@ -4,6 +4,7 @@ import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.commons.factory.JedisFactory;
 import com.github.easynoder.easemq.server.IMQServer;
 import com.github.easynoder.easemq.server.NettyMQServerClientManager;
+import com.github.easynoder.easemq.server.config.NettyMQConfig;
 import com.github.easynoder.easemq.server.handler.EaseMQServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -37,10 +38,17 @@ public class NettyMQServer implements IMQServer{
     private ChannelFuture channelFuture;
     private HostPort hostPort;
 
+    private NettyMQConfig config;
+
     private NettyMQServerClientManager clienManager = new NettyMQServerClientManager();
 
     public NettyMQServer() {
         this(new HostPort());
+    }
+
+    public NettyMQServer(NettyMQConfig config) {
+        this(new HostPort());
+        this.config = config;
     }
 
     public NettyMQServer(HostPort hostPort) {
