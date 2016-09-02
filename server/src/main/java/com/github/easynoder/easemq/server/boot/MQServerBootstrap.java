@@ -2,10 +2,11 @@ package com.github.easynoder.easemq.server.boot;
 
 
 import com.github.easynoder.easemq.commons.factory.JedisFactory;
+import com.github.easynoder.easemq.server.QueueServer;
+import com.github.easynoder.easemq.server.ServerClientManager;
 import com.github.easynoder.easemq.server.config.NettyMQConfig;
 import com.github.easynoder.easemq.server.exception.ConfigParseException;
 import com.github.easynoder.easemq.server.netty.NettyMQServer;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,21 +22,23 @@ public class MQServerBootstrap {
 
 
     /**
-     * usage java -Dtopic:mytopic1,mytopic2
+     * usage java -Dtopic:mytopic1,mytopic2 -DqueueSize:10000
+     *
      * @param args
      */
     public static void main(String[] args) {
 
-        String dynamicTopics = System.getProperty("topic");
+        /*String dynamicTopics = System.getProperty("topic");
         if (StringUtils.isEmpty(dynamicTopics)) {
             LOGGER.info("需要指定监听的topic,启动失败.");
             LOGGER.info("Usage: java -Dtopic:mytopic1,mytopic2 ");
             return;
-        }
+        }*/
 
+        System.setProperty("topic", "easemq1");
         NettyMQConfig config = new NettyMQConfig();
         try {
-            config.loadFromDynamicParams(dynamicTopics);
+            config.loadFromJvm();
         } catch (ConfigParseException e) {
             e.printStackTrace();
             return;
@@ -44,14 +47,15 @@ public class MQServerBootstrap {
     }
 
 
-    public void boot(NettyMQConfig config) {
+    public void boot(NettyMQConfig mqConfig) {
         LOGGER.info("start netty mq-server >>>>>>>>>>>>>>>>>>>>");
         try {
             // TODO: 16/9/1 即将废弃
             JedisFactory.getJedis().del("easemq");
-            new NettyMQServer(config).start();
+            new NettyMQServer(mqConfig).start();
+
             // TODO: 16/9/1 redis 作为topic的共享 即将废弃
-            JedisFactory.getJedis().set("topic", config.getTopics().toString());
+            JedisFactory.getJedis().set("topic", mqConfig.getTopics().toString());
             LOGGER.info("netty mq-server start succ! welcome!");
         } catch (InterruptedException e) {
             System.out.printf("start netty server fail");

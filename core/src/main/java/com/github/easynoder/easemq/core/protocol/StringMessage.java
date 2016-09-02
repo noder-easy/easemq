@@ -6,5 +6,15 @@ package com.github.easynoder.easemq.core.protocol;
  * Date:16/8/31
  * E-mail:easynoder@outlook.com
  */
-public class StringMessage {
+public class StringMessage extends GenerateMessage{
+
+    public StringMessage(){
+
+    }
+
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
 }

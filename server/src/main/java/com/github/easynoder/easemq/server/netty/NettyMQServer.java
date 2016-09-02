@@ -1,9 +1,9 @@
 package com.github.easynoder.easemq.server.netty;
 
 import com.github.easynoder.easemq.commons.HostPort;
-import com.github.easynoder.easemq.commons.factory.JedisFactory;
 import com.github.easynoder.easemq.server.IMQServer;
-import com.github.easynoder.easemq.server.NettyMQServerClientManager;
+import com.github.easynoder.easemq.server.QueueServer;
+import com.github.easynoder.easemq.server.ServerClientManager;
 import com.github.easynoder.easemq.server.config.NettyMQConfig;
 import com.github.easynoder.easemq.server.handler.EaseMQServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
@@ -17,7 +17,6 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
 /**
  * Desc:
@@ -40,24 +39,25 @@ public class NettyMQServer implements IMQServer{
 
     private NettyMQConfig config;
 
-    private NettyMQServerClientManager clienManager = new NettyMQServerClientManager();
+    private QueueServer queueServer;
 
-    public NettyMQServer() {
-        this(new HostPort());
-    }
-
+    // TODO: 16/9/2 优化
     public NettyMQServer(NettyMQConfig config) {
-        this(new HostPort());
+        this.hostPort = new HostPort();
         this.config = config;
     }
 
-    public NettyMQServer(HostPort hostPort) {
+/*    public NettyMQServer(HostPort hostPort) {
         Assert.notNull(hostPort, "server bind hostport can't be null!");
         this.hostPort = hostPort;
-        new Thread(clienManager).start();
-    }
+    }*/
 
     public void start() throws InterruptedException {
+
+        //启动QueueServer
+        this.queueServer = new QueueServer(config, new ServerClientManager());
+        this.queueServer.start();
+
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
@@ -70,7 +70,7 @@ public class NettyMQServer implements IMQServer{
                         pipeline.addLast(new LengthFieldPrepender(4));
                         pipeline.addLast(new StringDecoder(CharsetUtil.UTF_8));
                         pipeline.addLast(new StringEncoder(CharsetUtil.UTF_8));
-                        pipeline.addLast(new EaseMQServerHandler(clienManager));
+                        pipeline.addLast(new EaseMQServerHandler(queueServer));
 
                     }
                 });
@@ -91,11 +91,5 @@ public class NettyMQServer implements IMQServer{
         bossGroup.shutdownGracefully();
     }
 
-
-    public static void main(String[] args) throws InterruptedException {
-        LOGGER.info("start netty mq-server >>>>>>>>>>>>>>>>>>>>");
-        new NettyMQServer().start();
-        JedisFactory.getJedis().del("easemq");
-    }
 
 }

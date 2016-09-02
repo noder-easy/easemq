@@ -21,7 +21,10 @@ public class DefaultProducerTest {
 
 
     public static void main(String[] args) throws InterruptedException {
-        startProducer();
+
+        for (int index = 1;index < 2;index++) {
+            startProducer(index);
+        }
         try {
             Thread.sleep(1000* 1000);
         } catch (InterruptedException e) {
@@ -29,12 +32,12 @@ public class DefaultProducerTest {
         }
     }
 
-    public static void startProducer() {
-        MessageListener listener = new DefaultMessageListener("easemq");
+    public static void startProducer(int index ) {
+        MessageListener listener = new DefaultMessageListener("easemq"+index);
         IProducer producer = new DefaultProducer(new NettyMQClient(listener));
         for (int i = 0;i < 1;i ++) {
             GenerateMessage.Header header = new GenerateMessage.Header();
-            header.setTopic("easemq");
+            header.setTopic("easemq"+index);
             header.setMessageId(UUID.randomUUID().toString());
             header.setTimestamp(System.currentTimeMillis());
             GenerateMessage message = new GenerateMessage();

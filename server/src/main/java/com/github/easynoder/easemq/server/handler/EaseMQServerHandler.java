@@ -4,7 +4,8 @@ import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.AckUtils;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
-import com.github.easynoder.easemq.server.NettyMQServerClientManager;
+import com.github.easynoder.easemq.server.QueueServer;
+import com.github.easynoder.easemq.server.ServerClientManager;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -22,16 +23,16 @@ public class EaseMQServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EaseMQServerHandler.class);
 
-    private NettyMQServerClientManager clientManager ;
+    private QueueServer queueServer;
 
-    public EaseMQServerHandler(NettyMQServerClientManager clientManager) {
-        this.clientManager = clientManager;
+    public EaseMQServerHandler(QueueServer queueServer) {
+        this.queueServer = queueServer;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         LOGGER.info("server channelActive>>>>>>>>"+ new Date());
-        clientManager.addCtx(ctx.channel().remoteAddress().toString(), ctx);
+        queueServer.getClientManager().addCtx(ctx.channel().remoteAddress().toString(), ctx);
     }
 
     @Override
@@ -47,7 +48,8 @@ public class EaseMQServerHandler extends ChannelInboundHandlerAdapter {
         } else {
             boolean succ = true;
             try{
-                clientManager.addMessage(packet.getMessage().getHeader().getTopic(), packet);
+                queueServer.addMessage(packet.getMessage().getHeader().getTopic(), packet);
+
             }catch (Exception e) {
                 LOGGER.error("MQ Server store message FAIL", e);
                 succ = false;

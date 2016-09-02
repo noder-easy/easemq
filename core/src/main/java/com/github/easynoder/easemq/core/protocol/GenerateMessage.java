@@ -47,6 +47,7 @@ public class GenerateMessage {
         private String messageId;
         private long timestamp;
         private String topic;
+        private byte clusterId; //todo 消息来源集群
 
         public String getTopic() {
             return topic;
