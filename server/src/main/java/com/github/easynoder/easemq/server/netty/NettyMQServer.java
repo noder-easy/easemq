@@ -1,6 +1,7 @@
 package com.github.easynoder.easemq.server.netty;
 
 import com.github.easynoder.easemq.commons.HostPort;
+import com.github.easynoder.easemq.commons.ZkClient;
 import com.github.easynoder.easemq.server.IMQServer;
 import com.github.easynoder.easemq.server.QueueServer;
 import com.github.easynoder.easemq.server.ServerClientManager;
@@ -17,6 +18,8 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.Charset;
 
 /**
  * Desc:
@@ -41,6 +44,8 @@ public class NettyMQServer implements IMQServer{
 
     private QueueServer queueServer;
 
+    private ZkClient zkClient;
+
     // TODO: 16/9/2 优化
     public NettyMQServer(NettyMQConfig config) {
         this.hostPort = new HostPort();
@@ -54,10 +59,16 @@ public class NettyMQServer implements IMQServer{
 
     public void start() throws InterruptedException {
 
+        //启动ZkClient
+        zkClient = new ZkClient("localhost:2181");
+        zkClient.start();
+
         //启动QueueServer
-        this.queueServer = new QueueServer(config, new ServerClientManager());
+        this.queueServer = new QueueServer(config, new ServerClientManager(), zkClient);
         this.queueServer.start();
 
+
+        // 启动netty
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
@@ -76,6 +87,11 @@ public class NettyMQServer implements IMQServer{
                 });
         channelFuture = bootstrap.bind(this.hostPort.getHost(), this.hostPort.getPort()).sync();
         LOGGER.info("netty mq-server started! bind hostport {}", this.hostPort);
+
+        //上报netty server todo 需要优化
+        String serverAddr = this.hostPort.getHost()+":"+ this.hostPort.getPort();
+        zkClient.createNode("/servers/"+ serverAddr, "1".getBytes(Charset.forName("utf-8")));
+        LOGGER.info("netty mq-server upload to zk succ! path = {}, value = {}", "/servers/"+serverAddr, "1");
     }
 
     public void close() {

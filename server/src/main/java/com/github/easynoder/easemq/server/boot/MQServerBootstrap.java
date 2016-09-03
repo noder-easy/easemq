@@ -35,7 +35,7 @@ public class MQServerBootstrap {
             return;
         }*/
 
-        System.setProperty("topic", "easemq1");
+        System.setProperty("topic", "easemq1,easemq2");
         NettyMQConfig config = new NettyMQConfig();
         try {
             config.loadFromJvm();
@@ -51,15 +51,15 @@ public class MQServerBootstrap {
         LOGGER.info("start netty mq-server >>>>>>>>>>>>>>>>>>>>");
         try {
             // TODO: 16/9/1 即将废弃
-            JedisFactory.getJedis().del("easemq");
+            /*JedisFactory.getJedis().del("easemq1");
+            JedisFactory.getJedis().del("easemq2");*/
             new NettyMQServer(mqConfig).start();
 
             // TODO: 16/9/1 redis 作为topic的共享 即将废弃
-            JedisFactory.getJedis().set("topic", mqConfig.getTopics().toString());
+           // JedisFactory.getJedis().set("topic", mqConfig.getTopics().toString());
             LOGGER.info("netty mq-server start succ! welcome!");
         } catch (InterruptedException e) {
-            System.out.printf("start netty server fail");
-            e.printStackTrace();
+            LOGGER.error("start netty server fail", e);
         }
     }
 }

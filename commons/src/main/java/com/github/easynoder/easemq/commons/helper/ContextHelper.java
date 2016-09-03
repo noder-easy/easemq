@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 public class ContextHelper {
 
 
-    public static Jedis jedis = JedisFactory.getJedis();
+//    public static Jedis jedis = JedisFactory.getJedis();
 
     /**
      * topic对应的消费者,可以通过zk保证数据的一致性
@@ -31,9 +31,9 @@ public class ContextHelper {
     public static void addTopicConsumer(String topic, String topicHostport) {
         topicAddressMap.put(topic, topicHostport);
         // todo zk
-        jedis = new Jedis("localhost", 6379);
+        /*jedis = new Jedis("localhost", 6379);
         jedis.rpush(topic, topicHostport);
-        jedis.close();
+        jedis.close();*/
     }
 
 }

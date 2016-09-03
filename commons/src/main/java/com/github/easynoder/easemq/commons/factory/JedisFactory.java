@@ -12,7 +12,7 @@ public class JedisFactory {
 
     private static Jedis jedis = new Jedis("localhost", 6379);
 
-    public static Jedis getJedis() {
+/*    public static Jedis getJedis() {
         return jedis;
-    }
+    }*/
 }

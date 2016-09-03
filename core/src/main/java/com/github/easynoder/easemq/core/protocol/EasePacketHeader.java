@@ -16,12 +16,12 @@ public class EasePacketHeader {
 
     private int opaque;
 
-    private int extra;
+    private int extra = 0;
 
     private static final AtomicInteger atomicOpaqueu = new AtomicInteger(1);
 
     public EasePacketHeader(byte cmdType) {
-        this(cmdType, 0, atomicOpaqueu.decrementAndGet() % Integer.MAX_VALUE, 0);
+        this(cmdType, 0, atomicOpaqueu.incrementAndGet() % Integer.MAX_VALUE, 0);
     }
 
     private EasePacketHeader(byte cmdType, int version, int opaque, int extra) {

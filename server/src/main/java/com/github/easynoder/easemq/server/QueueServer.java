@@ -1,5 +1,6 @@
 package com.github.easynoder.easemq.server;
 
+import com.github.easynoder.easemq.commons.ZkClient;
 import com.github.easynoder.easemq.commons.factory.JedisFactory;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.exception.StoreException;
@@ -39,7 +40,9 @@ public class QueueServer {
      */
     private ConcurrentMap<String/*topic*/, IStore<EasePacket>> queueMap = new ConcurrentHashMap<String, IStore<EasePacket>>();
 
-    private static Jedis jedis = new Jedis("localhost", 6379);
+    // private static Jedis jedis = new Jedis("localhost", 6379);
+
+    private ZkClient zkClient;
 
     public NettyMQConfig getMqConfig() {
         return mqConfig;
@@ -49,10 +52,11 @@ public class QueueServer {
         return clientManager;
     }
 
-    public QueueServer(NettyMQConfig mqConfig, ServerClientManager clientManager) {
+    public QueueServer(NettyMQConfig mqConfig, ServerClientManager clientManager, ZkClient zkClient) {
         Assert.notNull(mqConfig, "queue mqconfig can't be null.");
         this.mqConfig = mqConfig;
         this.clientManager = clientManager;
+        this.zkClient = zkClient;
     }
 
     public synchronized void start() {
@@ -86,10 +90,13 @@ public class QueueServer {
 
         private String topic;
         private IStore<EasePacket> queue;
+        private String subPath = "";
 
         public QueueTask(String topic, IStore<EasePacket> queue) {
             this.topic = topic;
             this.queue = queue;
+            // "/topic/" + this.listener.getTopic() + "/sub";
+            subPath = "/topic/" + topic + "/sub";
         }
 
         public void run() {
@@ -105,9 +112,7 @@ public class QueueServer {
                     LOGGER.debug("topic [{}] -> queue get message [{}]", topic, data);
                 }
 
-                jedis =  new Jedis("localhost", 6379);
-                List<String> addrs = jedis.lrange(topic, 0, -1);
-                jedis.close();
+                List<String> addrs = zkClient.getChilden(subPath);
                 if (CollectionUtils.isEmpty(addrs)) {
                     LOGGER.warn("no listener addr for topic = {}", topic);
                     continue;
@@ -127,7 +132,7 @@ public class QueueServer {
                     data.getMessage().getHeader().setTimestamp(System.currentTimeMillis());
                     ctx.channel().writeAndFlush(GsonUtils.getGson().toJson(data));
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("addr -> [{}], topic -> [{}] , channel send message [{}] ok!", addr, topic, data);
+                        // LOGGER.debug("addr -> [{}], topic -> [{}] , channel send message [{}] ok!", addr, topic, data);
                     }
                 } else {
                     LOGGER.warn("topic [{}] -> channel is inactive!", topic);

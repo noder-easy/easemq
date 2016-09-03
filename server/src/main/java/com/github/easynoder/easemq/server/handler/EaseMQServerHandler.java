@@ -32,7 +32,7 @@ public class EaseMQServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         LOGGER.info("server channelActive>>>>>>>>"+ new Date());
-        queueServer.getClientManager().addCtx(ctx.channel().remoteAddress().toString(), ctx);
+        queueServer.getClientManager().addCtx(ctx.channel().remoteAddress().toString().substring(1), ctx);
     }
 
     @Override
