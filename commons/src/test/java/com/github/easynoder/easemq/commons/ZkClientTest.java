@@ -1,11 +1,8 @@
 package com.github.easynoder.easemq.commons;
 
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.nio.charset.Charset;
 
 /**
  * Desc:
@@ -39,7 +36,7 @@ public class ZkClientTest {
 
     @Test
     public void testGetChildren() {
-        System.out.println(client.getChilden("/servers"));
+        System.out.println(client.getChildren("/servers"));
     }
 
     @After

@@ -1,10 +1,13 @@
 package com.github.easynoder.easemq.client.handler;
 
+import com.github.easynoder.easemq.client.ResponseFuture;
+import com.github.easynoder.easemq.client.ResponseManager;
 import com.github.easynoder.easemq.client.listener.MessageListener;
 import com.github.easynoder.easemq.commons.ZkClient;
 import com.github.easynoder.easemq.commons.helper.ContextHelper;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.AckUtils;
+import com.github.easynoder.easemq.core.protocol.AckMessage;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
 import io.netty.channel.ChannelHandlerContext;
@@ -57,6 +60,10 @@ public class EaseMQClientHandler extends ChannelInboundHandlerAdapter {
         EasePacket packet = GsonUtils.getGson().fromJson((String) msg, EasePacket.class);
         if (packet.getHeader().getCmdType() == CmdType.CMD_ACK) {
             LOGGER.info("client receive ack = {}", packet);
+
+            // todo delete
+            EasePacket ackPacket = AckUtils.buildAckPacket(packet, packet.getMessage().getHeader(), false);
+            ResponseManager.setResponse(packet.getHeader().getOpaque(), ackPacket);
         } else {
             if (listener != null) {
                 boolean succ = true;

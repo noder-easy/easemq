@@ -5,13 +5,11 @@ import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.commons.ZkClient;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.GenerateMessage;
-import com.google.common.collect.Collections2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.math.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -58,7 +56,7 @@ public class MQClientManager {
 
     public void loadMQServer(String zkAddr) throws Exception {
 
-        List<String> serverList = zkClient.getChilden("/servers");
+        List<String> serverList = zkClient.getChildren("/servers");
         if (CollectionUtils.isEmpty(serverList)) {
             throw new Exception("please assign at least 1 mqserver!");
         }
@@ -98,7 +96,8 @@ public class MQClientManager {
     public void send(String topic, GenerateMessage message) {
         IMQClient client = findClient(topic);
         if (client != null) {
-            client.send(CmdType.CMD_STRING_MSG, message);
+           // client.send(CmdType.CMD_STRING_MSG, message);
+            client.sendAndGet(CmdType.CMD_STRING_MSG, message);
         }
     }
 

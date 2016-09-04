@@ -5,6 +5,7 @@ import com.github.easynoder.easemq.client.handler.EaseMQClientHandler;
 import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.commons.ZkClient;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
+import com.github.easynoder.easemq.core.protocol.AckMessage;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
 import com.github.easynoder.easemq.core.protocol.EasePacketHeader;
 import com.github.easynoder.easemq.core.protocol.GenerateMessage;
@@ -21,6 +22,8 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.*;
 
 public class NettyMQClient implements IMQClient {
 
@@ -50,7 +53,6 @@ public class NettyMQClient implements IMQClient {
     }
 
 
-
     public void start() {
         try {
             Bootstrap b = new Bootstrap();
@@ -65,7 +67,7 @@ public class NettyMQClient implements IMQClient {
                     pipeline.addLast("decoder", new StringDecoder(CharsetUtil.UTF_8));
                     pipeline.addLast("encoder", new StringEncoder(CharsetUtil.UTF_8));
 
-                    pipeline.addLast("handler", new EaseMQClientHandler(listener,zkClient));
+                    pipeline.addLast("handler", new EaseMQClientHandler(listener, zkClient));
                 }
             });
 
@@ -101,6 +103,46 @@ public class NettyMQClient implements IMQClient {
         // TODO: 16/8/30 异步优化
         channel.flush();
     }
+
+
+    public Object sendAndGet(final byte cmdType, final GenerateMessage message) {
+        EasePacketHeader packetHeader = new EasePacketHeader(cmdType);
+
+        ResponseFuture responseFuture = new ResponseFuture(packetHeader.getOpaque());
+        ResponseManager.addResponseFuture(packetHeader.getOpaque(), responseFuture);
+
+        EasePacket packet = new EasePacket().setHeader(packetHeader).setMessage(message);
+        Channel channel = channelFuture.channel();
+        channel.write(gson.toJson(packet));
+
+        channelFuture.addListener(new ChannelFutureListener() {
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                if (channelFuture.isSuccess()) {
+                    // TODO: 16/8/30 统计
+                } else {
+                    LOGGER.warn("send error cmdType = {}, message = {}", cmdType, message);
+                    System.out.println();
+                }
+            }
+        });
+
+        // TODO: 16/8/30 异步优化
+        channel.flush();
+        try {
+            EasePacket easePacket = (EasePacket) responseFuture.get(1, TimeUnit.SECONDS);
+            AckMessage ack = (AckMessage) easePacket.getMessage();
+            if (ack.isSuccess()) {
+                System.out.println("异步返回结果:" + true);
+            } else{
+                System.out.println("异步返回结果:" + false + "; 准备重投");
+            }
+            return ack;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     public void close() {
         try {

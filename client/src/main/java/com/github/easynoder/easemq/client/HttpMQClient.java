@@ -1,6 +1,5 @@
 package com.github.easynoder.easemq.client;
 
-import com.github.easynoder.easemq.client.listener.MessageListener;
 import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 
 /**
@@ -9,16 +8,22 @@ import com.github.easynoder.easemq.core.protocol.GenerateMessage;
  * Date:16/7/10
  * E-mail:easynoder@outlook.com
  */
-public class HttpMQClient implements IMQClient{
-    public void start() {
+public class HttpMQClient implements IMQClient {
 
+    public void start() {
+        throw new UnsupportedOperationException();
     }
 
     public void send(byte cmdType, GenerateMessage message) {
+        throw new UnsupportedOperationException();
+    }
+
+    public Object sendAndGet(byte cmdType, GenerateMessage message) {
+        throw new UnsupportedOperationException();
 
     }
 
     public void close() {
-
+        throw new UnsupportedOperationException();
     }
 }

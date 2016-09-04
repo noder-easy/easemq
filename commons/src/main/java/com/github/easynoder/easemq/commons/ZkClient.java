@@ -2,6 +2,7 @@ package com.github.easynoder.easemq.commons;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
@@ -101,11 +102,20 @@ public class ZkClient {
         }
     }
 
-    public List<String> getChilden(String path) {
+    public List<String> getChildren(String path) {
         try {
-            return this.client.getChildren().forPath(path);
+            return this.client.getChildren().usingWatcher((CuratorWatcher) null).forPath(path);
         } catch (Exception e) {
-            LOGGER.error("getChilden error", e);
+            LOGGER.error("getChildren error", e);
+            return Collections.EMPTY_LIST;
+        }
+    }
+
+    public List<String> getChildren(String path, CuratorWatcher watcher) {
+        try {
+            return this.client.getChildren().usingWatcher(watcher).forPath(path);
+        } catch (Exception e) {
+            LOGGER.error("getChildren error", e);
             return Collections.EMPTY_LIST;
         }
     }

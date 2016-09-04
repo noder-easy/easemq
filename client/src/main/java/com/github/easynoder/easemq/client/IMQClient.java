@@ -11,5 +11,7 @@ public interface IMQClient {
 
     public void send(byte cmdType, GenerateMessage message);
 
+    public Object sendAndGet(byte cmdType, GenerateMessage message);
+
     public void close();
 }

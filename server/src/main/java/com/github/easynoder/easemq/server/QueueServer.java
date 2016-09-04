@@ -1,7 +1,6 @@
 package com.github.easynoder.easemq.server;
 
 import com.github.easynoder.easemq.commons.ZkClient;
-import com.github.easynoder.easemq.commons.factory.JedisFactory;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.exception.StoreException;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
@@ -12,11 +11,14 @@ import io.netty.channel.ChannelHandlerContext;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.RandomUtils;
+import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-import redis.clients.jedis.Jedis;
 
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -35,10 +37,14 @@ public class QueueServer {
 
     private ServerClientManager clientManager;
 
+    private static final String TOPIC_ROOT_PATH = "/topic";
+
     /**
      * topic 对应的队列
      */
     private ConcurrentMap<String/*topic*/, IStore<EasePacket>> queueMap = new ConcurrentHashMap<String, IStore<EasePacket>>();
+
+    private ConcurrentMap<String/*topic*/, List<String>> consumerMap = new ConcurrentHashMap<String, List<String>>();
 
     // private static Jedis jedis = new Jedis("localhost", 6379);
 
@@ -65,6 +71,7 @@ public class QueueServer {
             return;
         }
 
+        // 启动消息队列
         for (String tmpTopic : mqConfig.getTopics()) {
 
             final String topic = tmpTopic;
@@ -73,6 +80,78 @@ public class QueueServer {
             new Thread(new QueueTask(topic, queue)).start();
         }
 
+        //订阅topic
+        for (String topic : mqConfig.getTopics()) {
+
+            String topicPath = TOPIC_ROOT_PATH + "/" + topic;
+            String consumerPath = topicPath + "/sub";
+            String producerPath = topicPath + "/pub";
+            byte[] defaultValue = "1".getBytes(Charset.forName("utf-8"));
+
+            if (!zkClient.createNode(consumerPath, defaultValue)) {
+                LOGGER.warn("create node error, path = {}", consumerPath);
+            }
+           /* if (!zkClient.createNode(producerPath, defaultValue)) {
+                LOGGER.warn("create node error, path = {}", producerPath);
+            }*/
+            zkClient.getChildren(consumerPath, new MqWatcher(topic));
+//            zkClient.getChildren(producerPath, new MqWatcher());
+        }
+
+
+    }
+
+    /**
+     * todo thread-safe  优化
+     *
+     * @param topic
+     * @param serverList
+     */
+    public synchronized void updateConsumer(String topic, List<String> serverList) {
+        List<String> originList = consumerMap.get(topic);
+        /*originList.retainAll(serverList);
+        serverList.removeAll(originList);
+        if (CollectionUtils.isNotEmpty(serverList)) {
+
+            originList.addAll(serverList);
+        }*/
+        consumerMap.put(topic, serverList);
+        LOGGER.info("updateConsumer {} -> {}", originList, serverList);
+    }
+
+
+    class MqWatcher implements CuratorWatcher {
+
+        private String topic;
+
+        public MqWatcher(String topic) {
+            this.topic = topic;
+        }
+
+        public void process(WatchedEvent watchedEvent) throws Exception {
+
+            switch (watchedEvent.getType()) {
+                case NodeChildrenChanged:
+                    //重新注册watcher
+                    List<String> data = zkClient.getChildren(watchedEvent.getPath(), this);
+                    LOGGER.info("MqWatcher update path = {}, value = {}", watchedEvent.getPath(), data);
+                    updateConsumer(topic, data);
+                    break;
+                case NodeCreated:
+                    break;
+                case NodeDeleted:
+                    // TODO: 16/9/4
+                    break;
+            }
+        }
+    }
+
+    public String getRandomConsumer(String topic) {
+        List<String> consumerList = consumerMap.get(topic);
+        if (CollectionUtils.isEmpty(consumerList)) {
+            return null;
+        }
+        return consumerList.get(RandomUtils.nextInt(consumerList.size()));
     }
 
     public void addMessage(String topic, EasePacket packet) throws StoreException {
@@ -112,12 +191,7 @@ public class QueueServer {
                     LOGGER.debug("topic [{}] -> queue get message [{}]", topic, data);
                 }
 
-                List<String> addrs = zkClient.getChilden(subPath);
-                if (CollectionUtils.isEmpty(addrs)) {
-                    LOGGER.warn("no listener addr for topic = {}", topic);
-                    continue;
-                }
-                String addr = addrs.get(RandomUtils.nextInt(addrs.size()));
+                String addr = getRandomConsumer(topic);
                 if (StringUtils.isEmpty(addr)) {
                     LOGGER.warn("topic [{}] listener is empty!", topic);
                     continue;
