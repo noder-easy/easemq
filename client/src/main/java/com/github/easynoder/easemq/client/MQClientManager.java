@@ -1,23 +1,25 @@
 package com.github.easynoder.easemq.client;
 
-import com.github.easynoder.easemq.client.listener.MessageListener;
+import com.github.easynoder.easemq.client.listener.MessageListenerAdapter;
 import com.github.easynoder.easemq.commons.HostPort;
-import com.github.easynoder.easemq.commons.ZkClient;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 import com.github.easynoder.easemq.core.protocol.HeartBeatMessage;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.math.RandomUtils;
+import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.zookeeper.WatchedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Desc:
+ * Desc: 连接管理器
  * Author:easynoder
  * Date:16/7/10
  * E-mail:easynoder@outlook.com
@@ -28,37 +30,37 @@ public class MQClientManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MQClientManager.class);
 
-    private String zkAddr;
-
-    private ZkClient zkClient;
+//    private ZkClient zkClient;
 
     private List<HostPort> mqServerList = new CopyOnWriteArrayList<HostPort>();
 
+    private MessageListenerAdapter listener;
 
-    private MessageListener listener;
+    private ZkManager zkManager;
 
 
     private ConcurrentMap<String, List<IMQClient>> topic2Clients = new ConcurrentHashMap<String, List<IMQClient>>();
 
-    public MQClientManager(String zkAddr, String topic, MessageListener listener) {
+    public MQClientManager(String topic, MessageListenerAdapter listener, ZkManager zkManager) {
         try {
             this.topic = topic;
             this.listener = listener;
-            zkClient = new ZkClient(zkAddr);
-            zkClient.start();
-            List<IMQClient> clients = new CopyOnWriteArrayList<IMQClient>();
-            topic2Clients.put(topic, clients);
-            loadMQServer(zkAddr);
+            this.zkManager = zkManager;
+            this.topic2Clients.put(topic, new CopyOnWriteArrayList<IMQClient>());
+            loadMQServer();
             initClient();
-            new LiveCheckServer().run();
+            //new LiveCheckServer().run();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void loadMQServer(String zkAddr) throws Exception {
+    public void loadMQServer() throws Exception {
+        List<String> serverList = zkManager.pullMQServers("/servers", new MqWatcher(topic));
+        updateMQServer(topic, serverList);
+    }
 
-        List<String> serverList = zkClient.getChildren("/servers");
+    private void updateMQServer(String topic, List<String> serverList) throws Exception {
         if (CollectionUtils.isEmpty(serverList)) {
             throw new Exception("please assign at least 1 mqserver!");
         }
@@ -66,21 +68,51 @@ public class MQClientManager {
             HostPort hostPort = new HostPort(server.split(":")[0], Integer.valueOf(server.split(":")[1]));
             mqServerList.add(hostPort);
         }
-        LOGGER.info("loadFromZkServer succ! zkAddr = {}, mqServerList = {}", zkAddr, mqServerList);
+        LOGGER.info("update mq-server succ! topic = {}, mqServerList = {}", topic, mqServerList);
+    }
+
+    // TODO: 16/9/4 可以进一步优化
+    class MqWatcher implements CuratorWatcher {
+
+        private String topic;
+
+        public MqWatcher(final String topic) {
+            this.topic = topic;
+        }
+
+        public void process(WatchedEvent watchedEvent) throws Exception {
+
+            switch (watchedEvent.getType()) {
+                case NodeChildrenChanged:
+                    //重新注册watcher
+                    List<String> data = zkManager.pullMQServers(watchedEvent.getPath(), this);
+                    LOGGER.info("MqWatcher update path = {}, value = {}", watchedEvent.getPath(), data);
+                    updateMQServer(topic, data);
+                    break;
+                case NodeCreated:
+                    break;
+                case NodeDeleted:
+                    // TODO: 16/9/4
+                    break;
+            }
+        }
     }
 
     // TODO: 16/9/3 thread-safe
-    public void initClient() {
+    private void initClient() {
         if (CollectionUtils.isEmpty(mqServerList)) {
             LOGGER.warn("mq-server addr is empty!");
             return;
         }
 
         for (HostPort hostPort : mqServerList) {
-            IMQClient client = new NettyMQClient(hostPort, listener, zkClient);
+            IMQClient client = new NettyMQClient(hostPort, listener, zkManager);
             List<IMQClient> clients = topic2Clients.get(topic);
             clients.add(client);
             topic2Clients.put(topic, clients);
+
+            //地址上报
+            zkManager.pushConsumer(topic, client.localAddress());
         }
 
         LOGGER.info("init clients succ! topic = {}, clients.size = {}", topic, topic2Clients.get(topic).size());
@@ -102,6 +134,20 @@ public class MQClientManager {
             client.sendAndGet(CmdType.CMD_STRING_MSG, message);
         }
     }
+
+    public void close() {
+        for (Map.Entry<String, List<IMQClient>> entry : topic2Clients.entrySet()) {
+            String topic = entry.getKey();
+            List<IMQClient> clients = entry.getValue();
+            if (CollectionUtils.isNotEmpty(clients)) {
+                for (IMQClient client : clients) {
+                    client.close();
+                    LOGGER.info("close client succ! topic = {}, client = {}", topic, client);
+                }
+            }
+        }
+    }
+
 
     public void callback(String topic, IMQClient client) {
         topic2Clients.get(topic).remove(client);

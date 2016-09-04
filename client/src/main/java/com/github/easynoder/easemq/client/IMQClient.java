@@ -13,5 +13,9 @@ public interface IMQClient {
 
     public Object sendAndGet(byte cmdType, GenerateMessage message);
 
+    public String localAddress();
+
+    public String remoteAddress();
+
     public void close();
 }

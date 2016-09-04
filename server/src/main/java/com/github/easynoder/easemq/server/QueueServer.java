@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Desc:
+ * Desc: 队列消息分发器
  * Author:easynoder
  * Date:16/9/2
  * E-mail:easynoder@outlook.com
@@ -45,8 +45,6 @@ public class QueueServer {
     private ConcurrentMap<String/*topic*/, IStore<EasePacket>> queueMap = new ConcurrentHashMap<String, IStore<EasePacket>>();
 
     private ConcurrentMap<String/*topic*/, List<String>> consumerMap = new ConcurrentHashMap<String, List<String>>();
-
-    // private static Jedis jedis = new Jedis("localhost", 6379);
 
     private ZkClient zkClient;
 
@@ -119,13 +117,19 @@ public class QueueServer {
         LOGGER.info("updateConsumer {} -> {}", originList, serverList);
     }
 
+    interface MQCallback {
+        public void callback();
+    }
 
     class MqWatcher implements CuratorWatcher {
 
         private String topic;
 
-        public MqWatcher(String topic) {
+        private MQCallback mqCallback;
+
+        public MqWatcher(final String topic) {
             this.topic = topic;
+
         }
 
         public void process(WatchedEvent watchedEvent) throws Exception {
@@ -136,6 +140,7 @@ public class QueueServer {
                     List<String> data = zkClient.getChildren(watchedEvent.getPath(), this);
                     LOGGER.info("MqWatcher update path = {}, value = {}", watchedEvent.getPath(), data);
                     updateConsumer(topic, data);
+                    //mqCallback.callback();
                     break;
                 case NodeCreated:
                     break;
@@ -174,7 +179,6 @@ public class QueueServer {
         public QueueTask(String topic, IStore<EasePacket> queue) {
             this.topic = topic;
             this.queue = queue;
-            // "/topic/" + this.listener.getTopic() + "/sub";
             subPath = "/topic/" + topic + "/sub";
         }
 
@@ -206,7 +210,7 @@ public class QueueServer {
                     data.getMessage().getHeader().setTimestamp(System.currentTimeMillis());
                     ctx.channel().writeAndFlush(GsonUtils.getGson().toJson(data));
                     if (LOGGER.isDebugEnabled()) {
-                        // LOGGER.debug("addr -> [{}], topic -> [{}] , channel send message [{}] ok!", addr, topic, data);
+//                         LOGGER.debug("addr -> [{}], topic -> [{}] , channel send message [{}] ok!", addr, topic, data);
                     }
                 } else {
                     LOGGER.warn("topic [{}] -> channel is inactive!", topic);

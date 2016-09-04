@@ -37,7 +37,7 @@ public class ZkClient {
                 .retryPolicy(new RetryNTimes(Integer.MAX_VALUE, 1000))
                 .connectionTimeoutMs(5000)
                 .build();
-
+        start();
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             public void run() {
                 ZkClient.this.close();

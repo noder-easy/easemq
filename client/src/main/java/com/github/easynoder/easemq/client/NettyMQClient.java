@@ -1,9 +1,8 @@
 package com.github.easynoder.easemq.client;
 
-import com.github.easynoder.easemq.client.listener.MessageListener;
 import com.github.easynoder.easemq.client.handler.EaseMQClientHandler;
+import com.github.easynoder.easemq.client.listener.MessageListenerAdapter;
 import com.github.easynoder.easemq.commons.HostPort;
-import com.github.easynoder.easemq.commons.ZkClient;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.protocol.AckMessage;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
@@ -23,7 +22,7 @@ import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
 public class NettyMQClient implements IMQClient {
 
@@ -37,18 +36,14 @@ public class NettyMQClient implements IMQClient {
 
     private HostPort hostPort;
 
-    private MessageListener listener;
+    private MessageListenerAdapter listenerAdapter;
 
-    private ZkClient zkClient;
+    private ZkManager zkManager;
 
-  /*  public NettyMQClient(MessageListener listener) {
-        this(new HostPort(), listener);
-    }*/
-
-    public NettyMQClient(HostPort hostPort, MessageListener listener, ZkClient zkClient) {
+    public NettyMQClient(HostPort hostPort, MessageListenerAdapter listenerAdapter, ZkManager zkManager) {
         this.hostPort = hostPort;
-        this.listener = listener;
-        this.zkClient = zkClient;
+        this.listenerAdapter = listenerAdapter;
+        this.zkManager = zkManager;
         this.start();
     }
 
@@ -67,7 +62,7 @@ public class NettyMQClient implements IMQClient {
                     pipeline.addLast("decoder", new StringDecoder(CharsetUtil.UTF_8));
                     pipeline.addLast("encoder", new StringEncoder(CharsetUtil.UTF_8));
 
-                    pipeline.addLast("handler", new EaseMQClientHandler(listener, zkClient));
+                    pipeline.addLast("handler", new EaseMQClientHandler(listenerAdapter, zkManager));
                 }
             });
 
@@ -143,6 +138,13 @@ public class NettyMQClient implements IMQClient {
         }
     }
 
+    public String localAddress() {
+        return channelFuture.channel().localAddress().toString().substring(1);
+    }
+
+    public String remoteAddress() {
+        return channelFuture.channel().localAddress().toString().substring(1);
+    }
 
     public void close() {
         try {

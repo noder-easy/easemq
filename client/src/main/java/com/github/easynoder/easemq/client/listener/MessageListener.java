@@ -10,8 +10,5 @@ import com.github.easynoder.easemq.core.protocol.GenerateMessage;
  */
 public interface MessageListener {
 
-    //todo 消息监听器目前和topic绑定,后续可优化
-    String getTopic();
-
     void onMessage(GenerateMessage message);
 }

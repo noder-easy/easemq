@@ -23,6 +23,14 @@ public class HttpMQClient implements IMQClient {
 
     }
 
+    public String localAddress() {
+        throw new UnsupportedOperationException();
+    }
+
+    public String remoteAddress() {
+        throw new UnsupportedOperationException();
+    }
+
     public void close() {
         throw new UnsupportedOperationException();
     }

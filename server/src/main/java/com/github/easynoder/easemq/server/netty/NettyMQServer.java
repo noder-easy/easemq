@@ -61,7 +61,6 @@ public class NettyMQServer implements IMQServer{
 
         //启动ZkClient
         zkClient = new ZkClient("localhost:2181");
-        zkClient.start();
 
         //启动QueueServer
         this.queueServer = new QueueServer(config, new ServerClientManager(), zkClient);

@@ -7,25 +7,14 @@ import org.slf4j.LoggerFactory;
 /**
  * Desc:
  * Author:easynoder
- * Date:16/8/28
+ * Date:16/9/4
  * E-mail:easynoder@outlook.com
  */
-public class DefaultMessageListener extends AbstractMessageListener {
+public class DefaultMessageListener implements MessageListener {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMessageListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMessageListener.class);
 
-    public DefaultMessageListener(String topic) {
-        super(topic);
-    }
-
-    public DefaultMessageListener(String topic, int consumers) {
-        super(topic, consumers);
-    }
-
-    @Override
-    public void process(GenerateMessage message) {
-        LOGGER.info("process message, topic = {}, receive message = {}", this.getTopic(), message);
+    public void onMessage(GenerateMessage message) {
+        LOGGER.info("consume message = {}", message);
     }
 }
-
-

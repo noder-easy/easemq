@@ -1,13 +1,11 @@
 package com.github.easynoder.easemq.client.handler;
 
-import com.github.easynoder.easemq.client.ResponseFuture;
 import com.github.easynoder.easemq.client.ResponseManager;
+import com.github.easynoder.easemq.client.ZkManager;
+import com.github.easynoder.easemq.client.listener.MessageListenerAdapter;
 import com.github.easynoder.easemq.client.listener.MessageListener;
-import com.github.easynoder.easemq.commons.ZkClient;
-import com.github.easynoder.easemq.commons.helper.ContextHelper;
 import com.github.easynoder.easemq.commons.util.GsonUtils;
 import com.github.easynoder.easemq.core.AckUtils;
-import com.github.easynoder.easemq.core.protocol.AckMessage;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.EasePacket;
 import io.netty.channel.ChannelHandlerContext;
@@ -28,18 +26,21 @@ public class EaseMQClientHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EaseMQClientHandler.class);
 
-    private MessageListener listener;
+    private MessageListenerAdapter listenerAdapter;
 
-    private ZkClient zkClient;
+    private ZkManager zkManager;
 
-    public EaseMQClientHandler(MessageListener listener, ZkClient zkClient) {
-        this.listener = listener;
-        this.zkClient = zkClient;
+    public EaseMQClientHandler(MessageListenerAdapter listenerAdapter, ZkManager zkManager) {
+        this.listenerAdapter = listenerAdapter;
+        this.zkManager = zkManager;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        if (listener != null) {
+        LOGGER.info("channelActive>>>>>>>>>>>>>>>> topic = {}, registe listener addr = {}",
+                listenerAdapter.getTopic(), ctx.channel().localAddress().toString());
+
+       /* if (listener != null) {
             // listener 记录消费者ip:端口
             LOGGER.info("topic = {}, registe listener addr = {}", listener.getTopic(), ctx.channel().localAddress().toString());
 //            ContextHelper.addTopicConsumer(listener.getTopic(), ctx.channel().localAddress().toString());
@@ -49,13 +50,13 @@ public class EaseMQClientHandler extends ChannelInboundHandlerAdapter {
             String path = "/topic/" + this.listener.getTopic() + "/sub/" + addr;
             zkClient.createNode(path, "1".getBytes(Charset.forName("utf-8")));
             LOGGER.info("消费者注册到zk成功, topic = {}, path = {}", listener.getTopic(), path);
-        }
+        }*/
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("client = {}, topic = {}, receive message = {} ", ctx.channel().localAddress().toString(), listener.getTopic(), msg);
+            LOGGER.debug("client = {}, topic = {}, receive message = {} ", ctx.channel().localAddress().toString(), listenerAdapter.getTopic(), msg);
         }
         EasePacket packet = GsonUtils.getGson().fromJson((String) msg, EasePacket.class);
         if (packet.getHeader().getCmdType() == CmdType.CMD_ACK) {
@@ -65,10 +66,10 @@ public class EaseMQClientHandler extends ChannelInboundHandlerAdapter {
             EasePacket ackPacket = AckUtils.buildAckPacket(packet, packet.getMessage().getHeader(), false);
             ResponseManager.setResponse(packet.getHeader().getOpaque(), ackPacket);
         } else {
-            if (listener != null) {
+            if (listenerAdapter != null) {
                 boolean succ = true;
                 try {
-                    listener.onMessage(packet.getMessage());
+                    listenerAdapter.onMessage(packet.getMessage());
                 } catch (Exception e) {
                     LOGGER.error("MQ Client receive message FAIL", e);
                     succ = false;
