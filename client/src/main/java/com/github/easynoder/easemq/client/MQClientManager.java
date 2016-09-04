@@ -5,6 +5,7 @@ import com.github.easynoder.easemq.commons.HostPort;
 import com.github.easynoder.easemq.commons.ZkClient;
 import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.GenerateMessage;
+import com.github.easynoder.easemq.core.protocol.HeartBeatMessage;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.math.RandomUtils;
 import org.slf4j.Logger;
@@ -49,6 +50,7 @@ public class MQClientManager {
             topic2Clients.put(topic, clients);
             loadMQServer(zkAddr);
             initClient();
+            new LiveCheckServer().run();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -74,7 +76,7 @@ public class MQClientManager {
             return;
         }
 
-        for (HostPort hostPort: mqServerList) {
+        for (HostPort hostPort : mqServerList) {
             IMQClient client = new NettyMQClient(hostPort, listener, zkClient);
             List<IMQClient> clients = topic2Clients.get(topic);
             clients.add(client);
@@ -96,8 +98,47 @@ public class MQClientManager {
     public void send(String topic, GenerateMessage message) {
         IMQClient client = findClient(topic);
         if (client != null) {
-           // client.send(CmdType.CMD_STRING_MSG, message);
+            // client.send(CmdType.CMD_STRING_MSG, message);
             client.sendAndGet(CmdType.CMD_STRING_MSG, message);
+        }
+    }
+
+    public void callback(String topic, IMQClient client) {
+        topic2Clients.get(topic).remove(client);
+        //// TODO: 16/9/4  
+    }
+
+    /**
+     * 连接存活检测
+     */
+    class LiveCheckServer {
+
+        public void run() {
+            LOGGER.info("live check start >>>>>>>>");
+            for (final IMQClient client : topic2Clients.get(topic)) {
+                // ping-pong 保持连接
+                //client.sendAndGet()
+                new Thread(new Runnable() {
+                    public void run() {
+                        int count = 0;
+                        while (true) {
+                            Object pong = client.sendAndGet(CmdType.CMD_HEARTBEAT, new HeartBeatMessage());
+                            if (pong == null) {
+                                try {
+                                    Thread.sleep(2000 * count);
+                                    count++;
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            if (count >= 5) {
+                                // 连接断开了.需要回调清理一下
+                                callback(topic, client);
+                            }
+                        }
+                    }
+                }).start();
+            }
         }
     }
 
