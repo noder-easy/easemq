@@ -32,7 +32,15 @@ public class ServerClientManager {
     public void addCtx(String addr, ChannelHandlerContext ctx) {
         ctxMap.put(addr, ctx);
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("addr list: " + ctxMap.keySet());
+            LOGGER.debug("add ctx addr: " + addr);
+        }
+    }
+
+    public void removeCtx(String addr) {
+        ctxMap.remove(addr);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("remove ctx addr: " + addr);
+
         }
     }
 

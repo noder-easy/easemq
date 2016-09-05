@@ -9,6 +9,7 @@ import com.github.easynoder.easemq.core.store.memory.DirectMemoryStore;
 import com.github.easynoder.easemq.server.config.NettyMQConfig;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.RandomUtils;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -19,9 +20,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Desc: 队列消息分发器
@@ -79,7 +82,7 @@ public class QueueServer {
         }
 
         //订阅topic
-        for (String topic : mqConfig.getTopics()) {
+        for (final String topic : mqConfig.getTopics()) {
 
             String topicPath = TOPIC_ROOT_PATH + "/" + topic;
             String consumerPath = topicPath + "/sub";
@@ -92,7 +95,11 @@ public class QueueServer {
            /* if (!zkClient.createNode(producerPath, defaultValue)) {
                 LOGGER.warn("create node error, path = {}", producerPath);
             }*/
-            zkClient.getChildren(consumerPath, new MqWatcher(topic));
+            zkClient.getChildren(consumerPath, new MqWatcher(topic, new MQCallback() {
+                public void callback(String topic, Object consumerList) {
+                    updateConsumer(topic, (List<String>) consumerList);
+                }
+            }));
 //            zkClient.getChildren(producerPath, new MqWatcher());
         }
 
@@ -103,22 +110,38 @@ public class QueueServer {
      * todo thread-safe  优化
      *
      * @param topic
-     * @param serverList
+     * @param consumerList
      */
-    public synchronized void updateConsumer(String topic, List<String> serverList) {
+    public synchronized void updateConsumer(String topic, List<String> consumerList) {
         List<String> originList = consumerMap.get(topic);
-        /*originList.retainAll(serverList);
-        serverList.removeAll(originList);
-        if (CollectionUtils.isNotEmpty(serverList)) {
 
-            originList.addAll(serverList);
-        }*/
-        consumerMap.put(topic, serverList);
-        LOGGER.info("updateConsumer {} -> {}", originList, serverList);
+        if (CollectionUtils.isEmpty(consumerList)) {
+            for (String addr : consumerMap.get(topic)) {
+                clientManager.getCtx(addr).channel().close();
+                clientManager.removeCtx(addr);
+            }
+            consumerMap.remove(topic);
+            LOGGER.warn("remove all consumer, topic = {}", topic);
+        } else {
+
+            if (CollectionUtils.isNotEmpty(originList) && CollectionUtils.isNotEmpty(consumerList)) {
+                List<String> removeConsumer = ListUtils.removeAll(originList, consumerList);
+                if (CollectionUtils.isNotEmpty(removeConsumer)) {
+                    for (String consumer : removeConsumer) {
+                        clientManager.getCtx(consumer).channel().close();
+                        clientManager.removeCtx(consumer);
+                    }
+                }
+            }
+        }
+
+        consumerMap.put(topic, consumerList);
+        LOGGER.info("updateConsumer {} -> {}", originList, consumerList);
+
     }
 
     interface MQCallback {
-        public void callback();
+        public void callback(String topic, Object data);
     }
 
     class MqWatcher implements CuratorWatcher {
@@ -127,9 +150,14 @@ public class QueueServer {
 
         private MQCallback mqCallback;
 
-        public MqWatcher(final String topic) {
+        public MqWatcher(final String topic, MQCallback mqCallback) {
             this.topic = topic;
+            this.mqCallback = mqCallback;
+        }
 
+        public void updateNotify(String topic, Object data, MQCallback callback) {
+            LOGGER.info("zk变更通知回调,topic = {} , data = {}", topic, data);
+            callback.callback(topic, data);
         }
 
         public void process(WatchedEvent watchedEvent) throws Exception {
@@ -139,8 +167,7 @@ public class QueueServer {
                     //重新注册watcher
                     List<String> data = zkClient.getChildren(watchedEvent.getPath(), this);
                     LOGGER.info("MqWatcher update path = {}, value = {}", watchedEvent.getPath(), data);
-                    updateConsumer(topic, data);
-                    //mqCallback.callback();
+                    mqCallback.callback(topic, data);
                     break;
                 case NodeCreated:
                     break;
@@ -197,7 +224,7 @@ public class QueueServer {
 
                 String addr = getRandomConsumer(topic);
                 if (StringUtils.isEmpty(addr)) {
-                    LOGGER.warn("topic [{}] listener is empty!", topic);
+                    LOGGER.warn("topic [{}] consumer is empty!", topic);
                     continue;
                 }
                 ChannelHandlerContext ctx = QueueServer.this.clientManager.getCtx(addr);

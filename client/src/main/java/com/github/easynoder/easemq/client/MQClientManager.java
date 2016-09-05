@@ -27,9 +27,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class MQClientManager {
 
-    private String topic;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(MQClientManager.class);
+
+    private String topic;
 
     private MessageListenerAdapter listener;
 
