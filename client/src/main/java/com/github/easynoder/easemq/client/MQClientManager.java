@@ -6,6 +6,7 @@ import com.github.easynoder.easemq.core.protocol.CmdType;
 import com.github.easynoder.easemq.core.protocol.GenerateMessage;
 import com.github.easynoder.easemq.core.protocol.HeartBeatMessage;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang.math.RandomUtils;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
@@ -30,25 +31,21 @@ public class MQClientManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MQClientManager.class);
 
-//    private ZkClient zkClient;
-
-    private List<HostPort> mqServerList = new CopyOnWriteArrayList<HostPort>();
-
     private MessageListenerAdapter listener;
 
     private ZkManager zkManager;
 
+    private List<HostPort> mqServerList = new CopyOnWriteArrayList<HostPort>();
 
-    private ConcurrentMap<String, List<IMQClient>> topic2Clients = new ConcurrentHashMap<String, List<IMQClient>>();
+    private ConcurrentMap<HostPort/*mq-server*/, List<IMQClient>> server2Clients = new ConcurrentHashMap<HostPort, List<IMQClient>>();
 
     public MQClientManager(String topic, MessageListenerAdapter listener, ZkManager zkManager) {
         try {
             this.topic = topic;
             this.listener = listener;
             this.zkManager = zkManager;
-            this.topic2Clients.put(topic, new CopyOnWriteArrayList<IMQClient>());
             loadMQServer();
-            initClient();
+//            initClient();
             //new LiveCheckServer().run();
         } catch (Exception e) {
             e.printStackTrace();
@@ -57,6 +54,12 @@ public class MQClientManager {
 
     public void loadMQServer() throws Exception {
         List<String> serverList = zkManager.pullMQServers("/servers", new MqWatcher(topic));
+        if (CollectionUtils.isNotEmpty(serverList)) {
+            for (String server : serverList) {
+                HostPort hostPort = new HostPort(server.split(":")[0], Integer.valueOf(server.split(":")[1]));
+                server2Clients.put(hostPort, new CopyOnWriteArrayList<IMQClient>());
+            }
+        }
         updateMQServer(topic, serverList);
     }
 
@@ -64,10 +67,58 @@ public class MQClientManager {
         if (CollectionUtils.isEmpty(serverList)) {
             throw new Exception("please assign at least 1 mqserver!");
         }
+
+        List<HostPort> updateMqServerList = new CopyOnWriteArrayList<HostPort>();
         for (String server : serverList) {
             HostPort hostPort = new HostPort(server.split(":")[0], Integer.valueOf(server.split(":")[1]));
-            mqServerList.add(hostPort);
+            updateMqServerList.add(hostPort);
         }
+
+        List<HostPort> targetMqServerList = new CopyOnWriteArrayList<HostPort>();
+
+        // 需要关闭的连接
+        List<HostPort> removeMqServerList = ListUtils.removeAll(mqServerList, updateMqServerList);
+
+        if (CollectionUtils.isNotEmpty(removeMqServerList)) {
+            for (HostPort server : removeMqServerList) {
+                if (server2Clients.get(server) == null) {
+                    LOGGER.info("clients not exists! hostport = {}", server);
+                    continue;
+                }
+                for (IMQClient client : server2Clients.get(server)) {
+                    client.close();
+                }
+                server2Clients.remove(server);
+            }
+            LOGGER.info("close clients succ! clients = {}", removeMqServerList);
+        }
+
+        targetMqServerList.addAll(ListUtils.removeAll(mqServerList, removeMqServerList));
+
+        // 新增mqserver
+        List<HostPort> addMqServerList = ListUtils.removeAll(updateMqServerList, mqServerList);
+        if (CollectionUtils.isNotEmpty(addMqServerList)) {
+            for (HostPort server : addMqServerList) {
+                IMQClient client = createMQClient(server, listener, zkManager);
+                LOGGER.info("创建连接成功! topic = {}, server = {}", topic, server);
+                // todo thread-safe
+                List list = server2Clients.get(server);
+                if (list == null) {
+                    list = new CopyOnWriteArrayList();
+                }
+                list.add(client);
+                server2Clients.put(server, list);
+                targetMqServerList.add(server);
+
+                //上报地址
+                if (listener != null) {
+                    zkManager.pushConsumer(topic, client.localAddress());
+                }
+                LOGGER.info("add mq-server succ! topic = {}, server = {}, clients = {}", topic, server, list.size());
+            }
+        }
+
+        mqServerList = targetMqServerList;
         LOGGER.info("update mq-server succ! topic = {}, mqServerList = {}", topic, mqServerList);
     }
 
@@ -99,32 +150,41 @@ public class MQClientManager {
     }
 
     // TODO: 16/9/3 thread-safe
-    private void initClient() {
-        if (CollectionUtils.isEmpty(mqServerList)) {
-            LOGGER.warn("mq-server addr is empty!");
-            return;
-        }
 
-        for (HostPort hostPort : mqServerList) {
-            IMQClient client = new NettyMQClient(hostPort, listener, zkManager);
-            List<IMQClient> clients = topic2Clients.get(topic);
-            clients.add(client);
-            topic2Clients.put(topic, clients);
-
-            //地址上报
-            zkManager.pushConsumer(topic, client.localAddress());
-        }
-
-        LOGGER.info("init clients succ! topic = {}, clients.size = {}", topic, topic2Clients.get(topic).size());
+    private IMQClient createMQClient(HostPort server, MessageListenerAdapter listenerAdapter, ZkManager zkManager) {
+        return new NettyMQClient(server, listener, zkManager);
     }
 
     public IMQClient findClient(String topic) {
-        // TODO: 16/9/3 随机优化,按照权重分配
-        IMQClient client = topic2Clients.get(topic).get(RandomUtils.nextInt(topic2Clients.get(topic).size()));
-        if (client == null) {
-            LOGGER.warn("no client available! topic = {}", topic);
+
+        if (server2Clients.size() < 1) {
+            throw new RuntimeException("no server for topic = " + topic);
+        } else if (server2Clients.size() == 1) {
+            int randomServer = RandomUtils.nextInt(server2Clients.keySet().size());
+            List<IMQClient> clients = server2Clients.get(mqServerList.get(randomServer));
+            IMQClient client = null;
+            if (CollectionUtils.isNotEmpty(clients)) {
+                if (clients.size() == 1) {
+                    client = clients.get(0);
+                } else {
+                    client = clients.get(RandomUtils.nextInt(clients.size()));
+                }
+            }
+            if (client == null) {
+                LOGGER.warn("no client available! topic = {}", topic);
+            }
+            return client;
+        } else {
+            // TODO: 16/9/3 随机优化,按照权重分配
+            int randomServer = RandomUtils.nextInt(server2Clients.keySet().size());
+            IMQClient client = server2Clients.get(randomServer)
+                    .get(RandomUtils.nextInt(server2Clients.get(randomServer).size()));
+            if (client == null) {
+                LOGGER.warn("no client available! topic = {}", topic);
+            }
+            return client;
         }
-        return client;
+
     }
 
     public void send(String topic, GenerateMessage message) {
@@ -136,8 +196,8 @@ public class MQClientManager {
     }
 
     public void close() {
-        for (Map.Entry<String, List<IMQClient>> entry : topic2Clients.entrySet()) {
-            String topic = entry.getKey();
+        for (Map.Entry<HostPort, List<IMQClient>> entry : server2Clients.entrySet()) {
+            HostPort server = entry.getKey();
             List<IMQClient> clients = entry.getValue();
             if (CollectionUtils.isNotEmpty(clients)) {
                 for (IMQClient client : clients) {
@@ -150,7 +210,7 @@ public class MQClientManager {
 
 
     public void callback(String topic, IMQClient client) {
-        topic2Clients.get(topic).remove(client);
+       // topic2Clients.get(topic).remove(client);
         //// TODO: 16/9/4  
     }
 
@@ -161,7 +221,7 @@ public class MQClientManager {
 
         public void run() {
             LOGGER.info("live check start >>>>>>>>");
-            for (final IMQClient client : topic2Clients.get(topic)) {
+            for (final IMQClient client : server2Clients.get(null)) {
                 // ping-pong 保持连接
                 //client.sendAndGet()
                 new Thread(new Runnable() {

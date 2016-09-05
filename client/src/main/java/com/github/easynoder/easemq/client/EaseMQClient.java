@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Desc: 对外开放的api
+ * Desc: 对外开放的api, 调用入口
  * Author:easynoder
  * Date:16/9/4
  * E-mail:easynoder@outlook.com

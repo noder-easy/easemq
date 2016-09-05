@@ -27,7 +27,7 @@ public class DefaultProducerTest {
         startProducer(1);
     }
 
-    public static void startProducer(int index ) {
+    public static void startProducer(int index) {
 
         String zkAddr = "localhost:2181";
         ZkManager zkManager = new ZkManager();
@@ -43,13 +43,15 @@ public class DefaultProducerTest {
         client.init();
 
 
-        for (int i = 0;i < 1;i ++) {
+
+
+        for (int i = 0; i < 1; i++) {
             GenerateMessage.Header header = new GenerateMessage.Header();
             header.setTopic(topic);
             header.setMessageId(UUID.randomUUID().toString());
             header.setTimestamp(System.currentTimeMillis());
             GenerateMessage message = new GenerateMessage();
-            message.setBody("body"+i);
+            message.setBody("body" + i);
             message.setHeader(header);
             client.send(message.getHeader().getTopic(), message);
         }
