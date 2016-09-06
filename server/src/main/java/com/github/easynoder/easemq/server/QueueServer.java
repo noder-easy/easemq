@@ -92,15 +92,11 @@ public class QueueServer {
             if (!zkClient.createNode(consumerPath, defaultValue)) {
                 LOGGER.warn("create node error, path = {}", consumerPath);
             }
-           /* if (!zkClient.createNode(producerPath, defaultValue)) {
+            if (!zkClient.createNode(producerPath, defaultValue)) {
                 LOGGER.warn("create node error, path = {}", producerPath);
-            }*/
-            zkClient.getChildren(consumerPath, new MqWatcher(topic, new MQCallback() {
-                public void callback(String topic, Object consumerList) {
-                    updateConsumer(topic, (List<String>) consumerList);
-                }
-            }));
-//            zkClient.getChildren(producerPath, new MqWatcher());
+            }
+            zkClient.getChildren(consumerPath, new MqWatcher(topic));
+            zkClient.getChildren(producerPath, new MqWatcher(topic));
         }
 
 
@@ -140,24 +136,16 @@ public class QueueServer {
 
     }
 
-    interface MQCallback {
+ /*   interface MQCallback {
         public void callback(String topic, Object data);
-    }
+    }*/
 
     class MqWatcher implements CuratorWatcher {
 
         private String topic;
 
-        private MQCallback mqCallback;
-
-        public MqWatcher(final String topic, MQCallback mqCallback) {
+        public MqWatcher(final String topic) {
             this.topic = topic;
-            this.mqCallback = mqCallback;
-        }
-
-        public void updateNotify(String topic, Object data, MQCallback callback) {
-            LOGGER.info("zk变更通知回调,topic = {} , data = {}", topic, data);
-            callback.callback(topic, data);
         }
 
         public void process(WatchedEvent watchedEvent) throws Exception {
@@ -167,7 +155,7 @@ public class QueueServer {
                     //重新注册watcher
                     List<String> data = zkClient.getChildren(watchedEvent.getPath(), this);
                     LOGGER.info("MqWatcher update path = {}, value = {}", watchedEvent.getPath(), data);
-                    mqCallback.callback(topic, data);
+                    updateConsumer(topic, data);
                     break;
                 case NodeCreated:
                     break;
